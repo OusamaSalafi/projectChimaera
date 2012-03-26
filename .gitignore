@@ -7,4 +7,6 @@ bin
 .project
 .pydevproject
 cmake_install.cmake
-CMakeLists.txt
+
+#This shouldnt be here, you need it to compile!
+#CMakeLists.txt 
