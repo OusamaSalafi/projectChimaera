@@ -57,18 +57,18 @@ int main(int argc, char **argv)
 	
 	while (ros::ok())
 	{
-		if(bearing == 6399)//6399.0)
+		if(bearing == 10)//6399.0)
 		{
 			bearing = 0.0;
-			//printf("Done!\n");
-			//return 0;
+			printf("Done!\n");
+			return 0;
 		}		
 	
 		sonarBinsArr.data.clear();
 		for (int i = 0; i < 90; i++)
 		{
 			sonarBinsArr.data.push_back(rand() % 255);
-			sonarScan.intensities.push_back(rand() % 255);
+			sonarScan.intensities.push_back(rand() % 255); //chuck the bins into one line of the scan as intensity
 		}
 
 		sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
@@ -77,9 +77,9 @@ int main(int argc, char **argv)
 		pub.publish(sonarBinsArr);
 		sonarBearingMsg.publish(sonarBearing);
 		
-		sonarScanMsg.publish(sonarScan);
+		sonarScanMsg.publish(sonarScan); //publish the Sonar scan as a LaserScan Message
 
-		printf("%f \n", bearing);
+		//printf("%f \n", bearing); //leaving this is causes major lag
 		
 		ros::spinOnce();
 		
