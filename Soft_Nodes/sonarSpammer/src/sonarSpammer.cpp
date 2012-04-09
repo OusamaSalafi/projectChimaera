@@ -57,11 +57,11 @@ int main(int argc, char **argv)
 	
 	while (ros::ok())
 	{
-		if(bearing == 10)//6399.0)
+		if(bearing == 6399.0)//6399.0)
 		{
 			bearing = 0.0;
-			printf("Done!\n");
-			return 0;
+			//printf("Done!\n");
+			//return 0;
 		}		
 	
 		sonarBinsArr.data.clear();
