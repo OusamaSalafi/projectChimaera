@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 	double sonar_frequency = 2000; //same as usleep???
 	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 
-	sonarScan.header.frame_id = "sonar"; 
+	sonarScan.header.frame_id = "/sonarSpammer"; 
 
-	sonarScan.angle_min = -0.00098125; //see SLAM wiki	
-	sonarScan.angle_max = 0.00098125; //see SLAM wiki
-	sonarScan.angle_increment = 0.00098125; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
+	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
+	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
 
 	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
@@ -53,7 +53,10 @@ int main(int argc, char **argv)
 	sonarScan.range_max = 75;	
 
 	ros::Time scan_time = ros::Time::now();
-	
+	// end laser scanner config
+
+	//Would it be better to have the sonar scan data as a point cloud rather than a laser scan message?
+	//laser_geometry contains functionality to account for the skew resulting from moving robots or tilting laser scanners. http://www.ros.org/wiki/laser_geometry
 	
 	while (ros::ok())
 	{
@@ -68,7 +71,8 @@ int main(int argc, char **argv)
 		for (int i = 0; i < 90; i++)
 		{
 			sonarBinsArr.data.push_back(rand() % 255);
-			sonarScan.intensities.push_back(rand() % 255); //chuck the bins into one line of the scan as intensity
+			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges.push_back(rand() % 255);
 		}
 
 		sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
