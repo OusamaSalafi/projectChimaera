@@ -15,7 +15,7 @@ using namespace std;
 //
 //For ease of integration this node publishes to the same topics as the old compass driver
 //
-const char* const COM_PORT = "//dev//ttyS1";
+const char* const COM_PORT = "//dev//ttyS0";
 const int BAUD_RATE = 115200;
 float heading, pitch, roll;		/*Floats for the returned values*/
 
@@ -60,7 +60,9 @@ int main(int argc, char **argv)
 		compassPitch.data = ypr.pitch;
 		compassRoll.data = ypr.roll;
 		
-
+		compassHeadingMsg.publish(compassHeading);
+		compassRollMsg.publish(compassRoll);
+		compassPitchMsg.publish(compassPitch);
 		ros::spinOnce();
 
 		loop_rate.sleep();
