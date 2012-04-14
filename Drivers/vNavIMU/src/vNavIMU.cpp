@@ -91,7 +91,9 @@ int main(int argc, char **argv)
 		// * Add Grid, make the reference frame /World
 		// * Add TF
 		// * You should now see 2 reference frames, one called /World and another called /IMU, if this node is running then the /IMU frame will rotate with the IMU
+		//argh nuts I just realised this shouldnt be in here, it should be in a node of its own that subscribes to the x,y from the sonar and z from svp		
 
+		
 		//You can use this function to get the raw voltage of each sensor, the temperature typically returns +1.34 after warm up
 		//vn100_getRawVoltageMeasurements(&vn100, &mag, &accel, &gyro, &temp);
 		//printf("Temperature = %+#7.2f\n", temp);
