@@ -82,6 +82,16 @@ int main(int argc, char **argv)
 		      tf::StampedTransform(
 			tf::Transform(tf::Quaternion(quat.x, quat.y, quat.z, quat.w), tf::Vector3(0.1, 0.4, 0.4)), //vector will contain the x,y,z from sonar and svp?
 			ros::Time::now(),"World", "IMU"));
+
+		//You can use Rviz to see a representation of the IMU Quaternion output
+		//
+		// * Run this node
+		// * Run Rviz (rosmake rviz , rosrun rviz rviz)
+		// * .Global Options - Fixed Frame - /World
+		// * Add Grid, make the reference frame /World
+		// * Add TF
+		// * You should now see 2 reference frames, one called /World and another called /IMU, if this node is running then the /IMU frame will rotate with the IMU
+
 		//You can use this function to get the raw voltage of each sensor, the temperature typically returns +1.34 after warm up
 		//vn100_getRawVoltageMeasurements(&vn100, &mag, &accel, &gyro, &temp);
 		//printf("Temperature = %+#7.2f\n", temp);
