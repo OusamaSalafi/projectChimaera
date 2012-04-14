@@ -3,6 +3,7 @@
 #include "std_msgs/Float32.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <tf/transform_broadcaster.h>
 #include "../include/vNavIMU/vectornav.h"
 #include "../include/vNavIMU/vNavIMU.h"
 
@@ -24,9 +25,18 @@ int main(int argc, char **argv)
 	
 	Vn100 vn100; //custom handle for vn100 from provided vectornav library - SHOULD CHECK THESE OUT	
 	VnYpr ypr; 
+	VnQuaternion quat; //quaternion struct handle
+	
+	VnVector3 mag;		//Raw Voltage from the Magnetometer
+	VnVector3 accel;	//Raw Voltage from the Accelerometer
+	VnVector3 gyro; 	//Raw Voltage from the Gyroscope
+	double temp;		//Raw voltage from the Temperature sensor
 	int connect = 0; //
 	ros::init(argc, argv, "vNavIMU"); //init the driver 
 	ros::NodeHandle imu; //create a handle for the node - this does the init and cleans up the node on destruction
+
+	//tf setup
+	tf::TransformBroadcaster IMU;
 
 	/*Advertises our various messages*/
 	ros::Publisher compassHeadingMsg = imu.advertise<std_msgs::Float32>("compassHeading", 100);
@@ -42,6 +52,7 @@ int main(int argc, char **argv)
 
 	//init the vectornav IMU
 	connect = vn100_connect(&vn100, COM_PORT, BAUD_RATE);
+	printf("connect returned = %d\n", connect);
 	if(connect != 0){ //vn100 Functions return 0 if everything is ok
 		vnError(connect);
 		return 0; //Connection failed in some way, abort
@@ -52,9 +63,10 @@ int main(int argc, char **argv)
   
 	while (ros::ok())
 	{
+
 		
 		vn100_getYawPitchRoll(&vn100, &ypr); //vectornav function
-		printf("YPR: %+#7.2f %+#7.2f %+#7.2f\n", ypr.yaw, ypr.pitch, ypr.roll);
+		//printf("YPR: %+#7.2f %+#7.2f %+#7.2f\n", ypr.yaw, ypr.pitch, ypr.roll);
 		ROS_DEBUG("H: %+#7.2f P: %+#7.2f R: %+#7.2f",ypr.yaw, ypr.pitch, ypr.roll);
 		compassHeading.data = ypr.yaw;	
 		compassPitch.data = ypr.pitch;
@@ -63,6 +75,17 @@ int main(int argc, char **argv)
 		compassHeadingMsg.publish(compassHeading);
 		compassRollMsg.publish(compassRoll);
 		compassPitchMsg.publish(compassPitch);
+		
+		vn100_getQuaternion(&vn100 , &quat); 
+		printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n", quat.x , quat.y , quat.z , quat.w);
+		IMU.sendTransform(
+		      tf::StampedTransform(
+			tf::Transform(tf::Quaternion(quat.x, quat.y, quat.z, quat.w), tf::Vector3(0.1, 0.4, 0.4)), //vector will contain the x,y,z from sonar and svp?
+			ros::Time::now(),"World", "IMU"));
+		//You can use this function to get the raw voltage of each sensor, the temperature typically returns +1.34 after warm up
+		//vn100_getRawVoltageMeasurements(&vn100, &mag, &accel, &gyro, &temp);
+		//printf("Temperature = %+#7.2f\n", temp);
+
 		ros::spinOnce();
 
 		loop_rate.sleep();
