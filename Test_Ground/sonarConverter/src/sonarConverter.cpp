@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 		
 	while(ros::ok())
 	{
-		
+		ros::spinOnce();
 		int j;
 		for(j=0; j<90; j++)
 		{
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		}		
 		sonarConverter.header.stamp = scan_time; //this seems to allow in index of the scans
 		sonarConverterMsg.publish(sonarConverter); //publish the Sonar scan as a LaserScan Message
-		ros::spinOnce(); 
+		 
 		usleep(2000);
 	}
 		

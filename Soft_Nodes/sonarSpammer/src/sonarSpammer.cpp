@@ -83,12 +83,13 @@ int main(int argc, char **argv)
 		
 		sonarScanMsg.publish(sonarScan); //publish the Sonar scan as a LaserScan Message
 
-		//printf("%f \n", bearing); //leaving this is causes major lag
-		
+		printf("%f \n", bearing); //leaving this is causes major lag
+		usleep(200000);
+
 		ros::spinOnce();
 		
 		bearing = bearing + 1.0;
-		usleep(2000);
+
 	}
 	
 }

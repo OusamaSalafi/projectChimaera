@@ -1,11 +1,15 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Float32.h"
+#include "sensor_msgs/Imu.h"
+#include "geometry_msgs/Quaternion.h"
+#include "geometry_msgs/Vector3.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <tf/transform_broadcaster.h>
 #include "../include/vNavIMU/vectornav.h"
 #include "../include/vNavIMU/vNavIMU.h"
+
 
 using namespace std;
 #include <iostream>
@@ -20,12 +24,20 @@ const char* const COM_PORT = "//dev//ttyS0";
 const int BAUD_RATE = 115200;
 float heading, pitch, roll;		/*Floats for the returned values*/
 
+//double round_nplaces(double value, int to)
+//{
+//    double places = pow(10.0, to);
+//    return round(value * places) / places;
+//}
+//
 int main(int argc, char **argv)
 {
 	
 	Vn100 vn100; //custom handle for vn100 from provided vectornav library - SHOULD CHECK THESE OUT	
 	VnYpr ypr; 
 	VnQuaternion quat; //quaternion struct handle
+	VnVector3 angularRate;
+	VnVector3 acceleration;
 	
 	VnVector3 mag;		//Raw Voltage from the Magnetometer
 	VnVector3 accel;	//Raw Voltage from the Accelerometer
@@ -36,18 +48,28 @@ int main(int argc, char **argv)
 	ros::NodeHandle imu; //create a handle for the node - this does the init and cleans up the node on destruction
 
 	//tf setup
-	tf::TransformBroadcaster IMU;
+	tf::TransformBroadcaster broadcaster;
 
-	/*Advertises our various messages*/
+	/*Advertises our various messages - these are purely for backwards compatibility with control*/
 	ros::Publisher compassHeadingMsg = imu.advertise<std_msgs::Float32>("compassHeading", 100);
 	ros::Publisher compassPitchMsg = imu.advertise<std_msgs::Float32>("compassPitch", 100);
 	ros::Publisher compassRollMsg = imu.advertise<std_msgs::Float32>("compassRoll", 100);
+
 
 	/*Sets up the message structures*/
 	std_msgs::Float32 compassHeading;
 	std_msgs::Float32 compassPitch;
 	std_msgs::Float32 compassRoll;
 
+	ros::Publisher vNavMsg = imu.advertise<sensor_msgs::Imu>("IMU", 100);
+	sensor_msgs::Imu IMU;
+	//sensor messages require geometry messages 
+	geometry_msgs::Quaternion rosQuat;
+	geometry_msgs::Vector3 rosVec_angVel;
+	geometry_msgs::Vector3 rosVec_linAccel;
+
+	ros::Time imu_time = ros::Time::now();
+	
 	ros::Rate loop_rate(LOOP_RATE);
 
 	//init the vectornav IMU
@@ -76,11 +98,35 @@ int main(int argc, char **argv)
 		compassRollMsg.publish(compassRoll);
 		compassPitchMsg.publish(compassPitch);
 		
+		//Publish the IMU data as an IMU Message
+		//http://www.ros.org/doc/api/sensor_msgs/html/msg/Imu.html
+		IMU.header.frame_id = "/auv"; 
+		IMU.header.stamp = imu_time;
 		vn100_getQuaternion(&vn100 , &quat); 
+		rosQuat.x = quat.x;
+		rosQuat.y = quat.y;
+		rosQuat.z = quat.z;
+		rosQuat.w = quat.w;
+		IMU.orientation = rosQuat;
+
+		vn100_getAcceleration(&vn100, &acceleration); //check these are right
+		rosVec_linAccel.x = acceleration.c0;
+		rosVec_linAccel.y = acceleration.c1;
+		rosVec_linAccel.z = acceleration.c2;
+		IMU.linear_acceleration = rosVec_linAccel;
+
+		vn100_getAngularRate(&vn100, &angularRate);
+		rosVec_angVel.x = angularRate.c0;
+		rosVec_angVel.y = angularRate.c1;
+		rosVec_angVel.z = angularRate.c2;			
+		IMU.angular_velocity = rosVec_angVel;
+		//printf("Angular Rate - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", angularRate.c0, angularRate.c1, angularRate.c2);
+		
+		vNavMsg.publish(IMU);
 		printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n", quat.x , quat.y , quat.z , quat.w);
-		IMU.sendTransform(
-		      tf::StampedTransform(
-			tf::Transform(tf::Quaternion(quat.x, quat.y, quat.z, quat.w), tf::Vector3(0.1, 0.4, 0.4)), //vector will contain the x,y,z from sonar and svp?
+		broadcaster.sendTransform(
+		     tf::StampedTransform(
+			tf::Transform(tf::Quaternion(quat.x, quat.y, quat.z, quat.w), tf::Vector3(1,0,0)),//angularRate.c0, angularRate.c1, angularRate.c2)), //vector will contain the x,y,z from sonar and svp?
 			ros::Time::now(),"World", "IMU"));
 
 		//You can use Rviz to see a representation of the IMU Quaternion output
