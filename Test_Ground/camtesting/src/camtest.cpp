@@ -150,26 +150,26 @@ class Demo{
 		}
 
 
-		cv_input_ = cvLoadImage("/home/sam/projectChimaera/Test_Ground/camtesting/pipe.jpg", CV_LOAD_IMAGE_COLOR);
+	//	cv_input_ = cvLoadImage("/home/sam/projectChimaera/Test_Ground/camtesting/pipe.jpg", CV_LOAD_IMAGE_COLOR);
 
 		// Convert IplImage To cv::Mat(OpenCV Matrix)
 		img_in_ = cv::Mat(cv_input_).clone();
 		
 		// Convert Input Image From BGR (Blue Green Red) To HLS (Hue Lightness Saturation)
-		cv::cvtColor(img_in_, img_hls_, CV_BGR2HLS);
+	//	cv::cvtColor(img_in_, img_hls_, CV_BGR2HLS);
 
 		// Convert Input Image From BGR (Blue Green Red) To HSV (Hue Saturation Value)
-		cv::cvtColor(img_in_, img_hsv_, CV_BGR2HSV);
+		//cv::cvtColor(img_in_, img_hsv_, CV_BGR2HSV);
 
 		//cv::threshold(img_hls_, img_thresh_hls_, 120, 255, CV_THRESH_BINARY);
 		//cv::threshold(img_hsv_, img_thresh_hsv_, 120, 255, CV_THRESH_BINARY);
-		img_thresh_hsv_ = img_hsv_ > 80;
-		img_thresh_hsv2_ = img_thresh_hsv_ < 70;
+		//img_thresh_hsv_ = img_hsv_ > 80;
+		//img_thresh_hsv2_ = img_thresh_hsv_ < 70;
 
 		// Convert From HSV To Greyscale
-		cv::cvtColor(img_hsv_, img_grey_, CV_BGR2GRAY);
+		//cv::cvtColor(img_hsv_, img_grey_, CV_BGR2GRAY);
 
-		img_out_ = img_hsv_; 
+		//img_out_ = img_hsv_; 
 		//img_out_ = ~img_out_;
 
 		//findCentre();
@@ -183,7 +183,7 @@ class Demo{
 		// -REMOVE S & V
 		// -CONVERT TO GREYSCALE
 		// -THRESHOLD (70?)
-		
+	/*	
 		ipl_r_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
 		ipl_g_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
 		ipl_b_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
@@ -208,7 +208,7 @@ class Demo{
 		img_hsv2_ = cv::Mat(ipl_hsv_).clone();
 		img_h_ = cv::Mat(ipl_h_).clone();
 		img_h_thresh_ = cv::Mat(ipl_h_thresh_).clone();
-		
+	*/	
 
 		// Display Input Image
 		cv::imshow("input", img_in_);
@@ -230,10 +230,10 @@ class Demo{
 		//cv::imshow("r", img_r_);
 		//cv::imshow("g", img_g_);
 		//cv::imshow("b", img_b_);
-		cv::imshow("rgb", img_rgb_);
+	//	cv::imshow("rgb", img_rgb_);
 		//cv::imshow("hsv2", img_hsv2_);
 		//cv::imshow("h", img_h_);
-		cv::imshow("h thresh", img_h_thresh_);
+		//cv::imshow("h thresh", img_h_thresh_);
 
 		// Needed To Keep The HighGUI Window Open
 		cv::waitKey(3);

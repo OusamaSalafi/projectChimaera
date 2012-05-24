@@ -60,6 +60,73 @@ public:
     ROS_INFO("Opened window?");
   }
 
+	void findCentre(void)
+	{
+		int x, y, count, x_estimate, y_estimate, x_centre, y_centre;
+		int x_draw1, x_draw2, y_draw1, y_draw2;
+		CvScalar s;
+
+		x_estimate = y_estimate = count = 0;
+
+		IplImage ipl_img = img_bin_;
+	//	IplImage ipl_hsv = img_thresh_hsv2_;
+		//use the first order moments to find centre of black region
+		for(x=0;x<ipl_img.height;x++)
+		{
+			for(y=0;y<ipl_img.width;y++)
+			{
+				s = cvGet2D(&ipl_img,x,y);
+				if(s.val[0] == 255)
+				{ //if we have found a white pixel
+					count++; //increase counters
+					x_estimate += x;
+					y_estimate += y;
+				}
+			}
+		}
+
+		if(count < 3000)
+		{ //arbritrary size threshold
+			printf("No Target in sight saw only %d\n",count);
+		}
+		else
+		{
+			x_centre = y_estimate / count; //estimate center of x
+			y_centre = x_estimate / count; //and y
+
+
+			x_draw1 = x_centre + 100; //this is for drawing only
+			x_draw2 = x_centre - 100;
+			y_draw1 = y_centre + 100;
+			y_draw2 = y_centre - 100;
+
+			s.val[0] = 255;
+
+
+			CvPoint pt1 = {x_draw1,y_centre};
+			CvPoint pt2 = {x_draw2,y_centre};
+			CvPoint pt3 = {x_centre,y_draw1};
+			CvPoint pt4 = {x_centre,y_draw2};
+
+			cvLine(&ipl_img, pt1 , pt2, s, 1, 8,0);
+			cvLine(&ipl_img, pt3 , pt4, s, 1, 8,0);
+
+			s.val[0] = 0;
+			s.val[1] = 255;
+			s.val[2] = 0;
+
+		//	cvLine(&ipl_hsv, pt1 , pt2, s, 1, 8,0);
+		//	cvLine(&ipl_hsv, pt3 , pt4, s, 1, 8,0);
+
+			img_bin_ = cv::Mat (&ipl_img).clone ();
+			//img_thresh_hsv2_ = cv::Mat (&ipl_hsv).clone ();
+
+			printf("X: %d Y: %d Count: %d Yeahhhhhhhhhhhhhhhhhhhhhh buoy!\n",x_centre,y_centre,count);
+		}
+
+		return;
+	}
+
   void imageCallback (const sensor_msgs::ImageConstPtr & msg_ptr)
   {
     // Convert ROS Imput Image Message to IplImage
@@ -109,6 +176,8 @@ public:
       }
     }
 
+	findCentre();
+	
     // Display Input image
     cv::imshow ("input", img_in_);
     // Display Binary Image
@@ -123,6 +192,7 @@ public:
 };
 
 
+	
 int
 main (int argc, char **argv)
 {

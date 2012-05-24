@@ -4,6 +4,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "sensor_msgs/Image.h"
+#include <opencv/cv.h>
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -16,14 +18,17 @@ class ImageConverter
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
   
+  //cv::Mat img;
+  IplImage* cv_ptr;
+  
 public:
   ImageConverter()
     : it_(nh_)
   {
-    image_pub_ = it_.advertise("out", 1);
+    //image_pub_ = it_.advertise("out", 1);
     image_sub_ = it_.subscribe("/gscam1/image_raw", 1, &ImageConverter::imageCb, this);
 
-    cv::namedWindow(WINDOW);
+    cv::namedWindow("WINDOW",1);
   }
 
   ~ImageConverter()
@@ -46,17 +51,21 @@ public:
 
     if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
       cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
-
-    cv::imshow(WINDOW, cv_ptr->image);
-    cv::waitKey(3);
+      
+	cv::Mat *img = cvCreateMat(1000,1000,CV_32FC3 );    
+	
+	cv::imshow("WINDOW", img);
     
-    image_pub_.publish(cv_ptr->toImageMsg());
+    cv::waitKey(3);
+
+ //   image_pub_.publish(cv_ptr->toImageMsg());
   }
 };
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "image_converter");
+   
   ImageConverter ic;
   ros::spin();
   return 0;
