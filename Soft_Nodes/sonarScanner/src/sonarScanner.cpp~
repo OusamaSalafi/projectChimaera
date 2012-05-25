@@ -9,12 +9,6 @@
 
 #define MAX_POINTS 999
 
-#define WIDTH	600
-#define HEIGHT 	600
-#define DEPTH	255
-
-int imageArray[HEIGHT][WIDTH];
-
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
 float Arr[6];
@@ -87,63 +81,6 @@ int main( int argc, char** argv )
 
 
 	}
-}
-
-/****************************************************************
- * Do trig to get the xy coordinates of the thing
- * add on half width and half height so it's centred and some things need
- * flipping to make them right 
- * *********************************************************/
-void pixelPlace( float theta, unsigned int distance, unsigned int depth )
-{
-	
-	float x, y;
-	if( theta > 0 && theta < 90 )
-	{
-		
-		theta = 90.0 - theta;
-		//printf("< 90\n");
-		x = (float)distance * cos( theta *PI/180);
-		y = (float)distance * sin( theta *PI/180);
-		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ( (float) WIDTH / 2.0) ;
-		imgy = (y * -1)+ ( (float) HEIGHT / 2.0);
-
-	}
-	else if( theta > 91 && theta < 180 )
-	{
-		//printf("> 90 && < 180\n");
-		y = (float)distance * cos(theta *PI/180);
-		x = (float)distance * sin(theta *PI/180);
-		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + (WIDTH / 2);
-		imgy = (y * -1) + (HEIGHT / 2);		
-
-	}
-	else if( theta > 181 && theta < 270 )
-	{
-		
-		theta = 90.0 - theta;
-		//printf("> 181 && < 270\n");
-		x = (float)distance * cos(theta *PI/180);
-		y = (float)distance * sin(theta *PI/180);		
-		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ((float)WIDTH / 2);
-		imgy = (y * -1) + ((float)HEIGHT / 2);
-		
-	}
-	else
-	{
-		//printf("> 271 && < 360\n");
-		y = (float)distance * cos(theta *PI/180);
-		x = (float)distance * sin(theta *PI/180);		
-		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ((float)WIDTH / 2);
-		imgy = (y * -1) + ((float)HEIGHT / 2);
-	}
-	
-	//imageArray[y][x] = 1;
-	imageArray[imgx][imgy] = depth;	
 }
 
 /*************************************************
