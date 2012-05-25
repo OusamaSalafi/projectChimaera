@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,20 +6,16 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-using namespace std;
 
 #include "ros/ros.h"
-
-#include "std_msgs/MultiArrayLayout.h"
-#include "std_msgs/MultiArrayDimension.h"
-
-#include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Int32.h"
+
+using namespace std;
 
 int main(int argc, char **argv)
 {
     
-
+	//Set up all the usual ros stuff:
 	ros::init(argc, argv, "timer");
 
 	ros::NodeHandle n;
@@ -51,16 +45,23 @@ int main(int argc, char **argv)
 
 		timerFile.close();		//Close file
 	}
+	//If the file fails to read, complain and then set to a defaul time (10 mins)
 	else 
 	{
 		printf("Unable to open file, resorting to defaul 10min run.\n");
 		tempRead = 10.0;	
 	}
 	
+	//missionLength needs to be in seconds, times the value in the file by 60, Bob's your uncle.
 	missionLength = int(tempRead * 60);
 
+	//Set ROS loop rate (Hz):
+	ros::Rate r(5);
+	
+	//Main ros loop:
 	while (ros::ok())
 	{
+		//Set up timerFlag publisher
 		std_msgs::Int32 timerFlag;
 		//Check current time.
 		currentSeconds = time (NULL);
@@ -83,10 +84,9 @@ int main(int argc, char **argv)
 		pub.publish(timerFlag);
 		//Let the world know
 		//ROS_INFO("I published something!");
-		//Do this.
 		ros::spinOnce();
-		//Added a delay so not to spam
-		sleep(2);
+		r.sleep();
+
 	}
 
 }

@@ -72,11 +72,7 @@ int main(int argc, char **argv)
 		//Save log to file:
 		if (logFile.is_open())
 		{	
-		logFile << (time(NULL) - startTime) << ",";
-		logFile << x << ",";
-		logFile << y << ",";
-		logFile << z << ",";
-		logFile << aa << "\n";
+		logFile << (time(NULL) - startTime) << x << y << z << aa << "\n";
 		//logFile << "This is a line.\n";
 		}
 		else 
