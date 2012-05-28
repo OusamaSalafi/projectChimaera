@@ -25,6 +25,10 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <math.h>
+//For Reading Config Files
+#include <INIReader/ini.h>
+#include <INIReader/cpp/INIReader.h>
+#include <iostream>
 
 // ROS/OpenCV HSV Demo
 // Based on http://www.ros.org/wiki/cv_bridge/Tutorials/UsingCvBridgeToConvertBetweenROSImagesAndOpenCVImages
@@ -208,6 +212,20 @@ int main(int argc, char **argv)
  	// Instaniate Demo Object
 	ROS_INFO("Online");
 	Demo d(nh);
+	
+	//Read threshold values from file
+	INIReader reader("config.ini");
+
+    if (reader.ParseError() < 0) 
+    {
+        std::cout << "Can't load 'config.ini'\n";
+        return 1;
+    }
+    std::cout << "Config loaded from 'config.ini': min_hue="
+              << reader.GetInteger("hue", "min_hue", -1) << ", max_hue="
+              << reader.GetInteger("hue", "max_hue", -1) << ", min_sat="
+              << reader.GetInteger("saturation", "min_sat", -1) <<"\n";
+	
   	// Spin ...
 
 
@@ -222,7 +240,7 @@ int main(int argc, char **argv)
 
 
 	/****************** FOR VIDEO INPUT MODE ******************/
-	cv::Mat video_frame;
+	/*cv::Mat video_frame;
 	IplImage video_frame2;
 	sensor_msgs::CvBridge bridge2_;
 	cv::VideoCapture cap("Test.avi");
@@ -234,7 +252,7 @@ int main(int argc, char **argv)
 		cap >> video_frame;
 		video_frame2 = video_frame;
 		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
-	}
+	}*/
 	/**********************************************************/
 
 
