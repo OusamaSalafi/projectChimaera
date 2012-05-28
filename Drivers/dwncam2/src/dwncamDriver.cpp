@@ -70,7 +70,7 @@ public:
 		x_estimate = y_estimate = count = 0;
 
 		IplImage ipl_img = img_bin_;
-	//	IplImage ipl_hsv = img_thresh_hsv2_;
+		IplImage ipl_seg = img_out_;
 		//use the first order moments to find centre of black region
 		for(x=0;x<ipl_img.height;x++)
 		{
@@ -101,26 +101,27 @@ public:
 			y_draw1 = y_centre + 100;
 			y_draw2 = y_centre - 100;
 
-			s.val[0] = 255;
-
+			s.val[0] = 100;
+			s.val[1] = 100;
+			s.val[2] = 100;
 
 			CvPoint pt1 = {x_draw1,y_centre};
 			CvPoint pt2 = {x_draw2,y_centre};
 			CvPoint pt3 = {x_centre,y_draw1};
 			CvPoint pt4 = {x_centre,y_draw2};
-
+			//Draw cross to threshold image
 			cvLine(&ipl_img, pt1 , pt2, s, 1, 8,0);
 			cvLine(&ipl_img, pt3 , pt4, s, 1, 8,0);
 
 			s.val[0] = 0;
-			s.val[1] = 255;
-			s.val[2] = 0;
-
-		//	cvLine(&ipl_hsv, pt1 , pt2, s, 1, 8,0);
-		//	cvLine(&ipl_hsv, pt3 , pt4, s, 1, 8,0);
+			s.val[1] = 0;
+			s.val[2] = 255;
+			//Draw cross to segmented image
+			cvLine(&ipl_seg, pt1 , pt2, s, 1, 8,0);
+			cvLine(&ipl_seg, pt3 , pt4, s, 1, 8,0);
 
 			img_bin_ = cv::Mat (&ipl_img).clone ();
-			//img_thresh_hsv2_ = cv::Mat (&ipl_hsv).clone ();
+			img_out_ = cv::Mat (&ipl_seg).clone ();
 
 			printf("X: %d Y: %d Count: %d Yeahhhhhhhhhhhhhhhhhhhhhh buoy!\n",x_centre,y_centre,count);
 		}
@@ -163,9 +164,9 @@ public:
 			{
   				// The output pixel is white if the input pixel
 				// hue is orange and saturation is reasonable
-				if(img_hue_.at<uchar>(i,j) > 25 && //4
+				if(img_hue_.at<uchar>(i,j) > 4 && //4
 				img_hue_.at<uchar>(i,j) < 34 && //30
-				img_sat_.at<uchar>(i,j) > 126){
+				img_sat_.at<uchar>(i,j) > 50){//126
 					img_bin_.at<uchar>(i,j) = 255;
 				} else {
 					img_bin_.at<uchar>(i,j) = 0;
@@ -224,7 +225,7 @@ int main(int argc, char **argv)
 	cv::Mat video_frame;
 	IplImage video_frame2;
 	sensor_msgs::CvBridge bridge2_;
-	cv::VideoCapture cap("Comp.avi");
+	cv::VideoCapture cap("Test.avi");
     	if(!cap.isOpened()){
         	return -1;
 	}
