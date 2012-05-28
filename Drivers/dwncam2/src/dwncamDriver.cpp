@@ -26,8 +26,8 @@
 #include <opencv/highgui.h>
 #include <math.h>
 //For Reading Config Files
-#include <INIReader/ini.h>
-#include <INIReader/cpp/INIReader.h>
+#include "ini.h"
+#include "INIReader.h"
 #include <iostream>
 
 // ROS/OpenCV HSV Demo
