@@ -30,11 +30,19 @@
 #include "INIReader.h"
 #include <iostream>
 
+//Threshold values
+int min_hue;
+int max_hue;
+int min_sat;
+	
 // ROS/OpenCV HSV Demo
 // Based on http://www.ros.org/wiki/cv_bridge/Tutorials/UsingCvBridgeToConvertBetweenROSImagesAndOpenCVImages
 
 class Demo
 {
+	
+typedef cv::Vec<uchar, 1> Vec1b;	
+typedef cv::Vec<uchar, 3> Vec3b;
 
 protected:
 	ros::NodeHandle nh_;
@@ -42,12 +50,18 @@ protected:
 	image_transport::Subscriber image_sub_;
 	sensor_msgs::CvBridge bridge_;
 	cv::Mat img_in_;
+	cv::Mat img_in_proc_;
 	cv::Mat img_hsv_;
 	cv::Mat img_hue_;
 	cv::Mat img_sat_;
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
+	cv::Mat img_red_;
+	cv::Mat img_green_;
+	cv::Mat img_blue_;
+	cv::Mat img_tmp_;
 	IplImage *cv_input_;
+
 
 public:
 
@@ -61,6 +75,7 @@ public:
 		cv::namedWindow ("input", 1);
 		cv::namedWindow ("binary image", 1);
 		cv::namedWindow ("segmented output", 1);
+		cv::namedWindow ("preprocessed image", 1);
 		ROS_INFO("Opened window?");
 	}
 
@@ -136,6 +151,9 @@ public:
 
 	void imageCallback(const sensor_msgs::ImageConstPtr & msg_ptr)
 	{
+		
+		int i, j;
+		cv::Mat img_v_;
 
 		// Convert ROS Imput Image Message to IplImage
 		try
@@ -146,11 +164,33 @@ public:
 		{
 			ROS_ERROR ("CvBridge Input Error");
  		}
-
+ 		
 		// Convert IplImage to cv::Mat
 		img_in_ = cv::Mat (cv_input_).clone ();
+		cv::vector<cv::Mat> planes;
+		//Apply histogram equlisation to input image 
+		//1: convert input to HSV
+		//2: separate V
+		//3: equlise V 
+		// 4: merge and convert back to BGR
+		//This will have the effect of contrast stretching
+		
+		//initilise and image to store v in 
+		img_v_ = cv::Mat::zeros(img_hsv_.rows, img_hsv_.cols, CV_8U);
+		//convert to HSV
+		cv::cvtColor (img_in_, img_hsv_, CV_BGR2HSV);
+		//pull out V store in planes[2]
+		cv::split(img_hsv_, planes);
+		//equlise V
+		cv::equalizeHist(planes[2], img_tmp_);
+		planes[2] = img_tmp_;
+		
+		cv::merge(planes, img_hsv_);
+
+        //convert back to a BGR image
+		cv::cvtColor (img_hsv_, img_in_proc_, CV_HSV2BGR);
 		// output = input
-		img_out_ = img_in_.clone ();
+/*		img_out_ = img_in_.clone ();
 		// Convert Input image from BGR to HSV
 		cv::cvtColor (img_in_, img_hsv_, CV_BGR2HSV);
 		// Zero Matrices
@@ -162,15 +202,16 @@ public:
 		cv::Mat img_split[] = { img_hue_, img_sat_};
 		cv::mixChannels(&img_hsv_, 3,img_split,2,from_to,2);
 
-		for(int i = 0; i < img_out_.rows; i++)
+		for(i = 0; i < img_out_.rows; i++)
 		{
-			for(int j = 0; j < img_out_.cols; j++)
+			for(j = 0; j < img_out_.cols; j++)
 			{
   				// The output pixel is white if the input pixel
-				// hue is orange and saturation is reasonable
-				if(img_hue_.at<uchar>(i,j) > 4 && //4
-				img_hue_.at<uchar>(i,j) < 34 && //30
-				img_sat_.at<uchar>(i,j) > 50){//126
+				// hue is yellow and saturation is reasonable
+												        	//original values | best found
+				if(img_hue_.at<uchar>(i,j) > min_hue &&     //4               | 4
+				img_hue_.at<uchar>(i,j) < max_hue &&        //30              | 34
+				img_sat_.at<uchar>(i,j) > min_sat){         //126             | 50
 					img_bin_.at<uchar>(i,j) = 255;
 				} else {
 					img_bin_.at<uchar>(i,j) = 0;
@@ -185,13 +226,15 @@ public:
 		}
 
 		findCentre();
-	
+*/	
 		// Display Input image
 		cv::imshow ("input", img_in_);
+		//Display preprocessed input image
+		cv::imshow ("preprocessed image", img_in_proc_);
 		// Display Binary Image
-		cv::imshow ("binary image", img_bin_);
+	//	cv::imshow ("binary image", img_bin_);
 		// Display segmented image
-		cv::imshow ("segmented output", img_out_);
+	//	cv::imshow ("segmented output", img_out_);
 
 		// Needed to  keep the HighGUI window open
 		cv::waitKey (3);
@@ -215,16 +258,23 @@ int main(int argc, char **argv)
 	
 	//Read threshold values from file
 	INIReader reader("config.ini");
-
+	//check the file can be opened
     if (reader.ParseError() < 0) 
     {
         std::cout << "Can't load 'config.ini'\n";
         return 1;
     }
-    std::cout << "Config loaded from 'config.ini': min_hue="
+    /*std::cout << "Config loaded from 'config.ini': min_hue="
               << reader.GetInteger("hue", "min_hue", -1) << ", max_hue="
               << reader.GetInteger("hue", "max_hue", -1) << ", min_sat="
-              << reader.GetInteger("saturation", "min_sat", -1) <<"\n";
+              << reader.GetInteger("saturation", "min_sat", -1) <<"\n";*/
+	//read the values in, defaults to best values found for the test video
+	min_hue = reader.GetInteger("hue", "min_hue", 4);
+	std::cout << "min_hue = " << min_hue << "\n";
+	max_hue = reader.GetInteger("hue", "max_hue", 34);
+	std::cout << "min_hue = " << max_hue << "\n";
+	min_sat = reader.GetInteger("saturation", "min_sat", 50);
+	std::cout << "min_hue = " << min_sat << "\n";
 	
   	// Spin ...
 
@@ -240,7 +290,7 @@ int main(int argc, char **argv)
 
 
 	/****************** FOR VIDEO INPUT MODE ******************/
-	/*cv::Mat video_frame;
+	cv::Mat video_frame;
 	IplImage video_frame2;
 	sensor_msgs::CvBridge bridge2_;
 	cv::VideoCapture cap("Test.avi");
@@ -252,7 +302,7 @@ int main(int argc, char **argv)
 		cap >> video_frame;
 		video_frame2 = video_frame;
 		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
-	}*/
+	}
 	/**********************************************************/
 
 

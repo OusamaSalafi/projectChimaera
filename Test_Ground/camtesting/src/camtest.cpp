@@ -183,7 +183,7 @@ class Demo{
 		// -REMOVE S & V
 		// -CONVERT TO GREYSCALE
 		// -THRESHOLD (70?)
-	/*	
+		
 		ipl_r_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
 		ipl_g_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
 		ipl_b_ = cvCreateImage(cvGetSize(cv_input_), 8, 1);
@@ -208,7 +208,7 @@ class Demo{
 		img_hsv2_ = cv::Mat(ipl_hsv_).clone();
 		img_h_ = cv::Mat(ipl_h_).clone();
 		img_h_thresh_ = cv::Mat(ipl_h_thresh_).clone();
-	*/	
+	
 
 		// Display Input Image
 		cv::imshow("input", img_in_);
@@ -224,13 +224,13 @@ class Demo{
 		//cv::imshow("grey", img_grey_);
 
 		// Display Output Image
-		//cv::imshow("out", img_out_);
+	//	cv::imshow("out", img_out_);
 		
 		
 		//cv::imshow("r", img_r_);
 		//cv::imshow("g", img_g_);
 		//cv::imshow("b", img_b_);
-	//	cv::imshow("rgb", img_rgb_);
+		cv::imshow("rgb", img_rgb_);
 		//cv::imshow("hsv2", img_hsv2_);
 		//cv::imshow("h", img_h_);
 		//cv::imshow("h thresh", img_h_thresh_);
