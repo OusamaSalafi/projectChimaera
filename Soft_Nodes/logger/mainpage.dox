@@ -5,7 +5,7 @@
 \b logger is ... 
 
 <!-- 
-Provide an overview of your package.
+This node creates a log file, in the specified format from the SAUC-E rules. It subscribes to the depth for Z, SLAM for X and Y and the missionPlanner for the current action of the robot.
 -->
 
 

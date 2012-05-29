@@ -5,7 +5,7 @@
 \b missionTimer 
 
 <!-- 
-Provide an overview of your package.
+missionTimer is used to stop the sub going over time in a run, the time for a run can be set in the file "~/projectChimaera/missionLength.txt". If no file is found or failed to load the timer will be set to a hardcoded time, currently 10 minutes. Once the time has gone over the flag "timerFlag" will be set to TRUE where the pilot node can read and make the submarine finish its run.
 -->
 
 -->

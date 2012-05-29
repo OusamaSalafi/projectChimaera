@@ -84,7 +84,6 @@ int main(int argc, char **argv)
 		pub.publish(timerFlag);
 		//Let the world know
 		//ROS_INFO("I published something!");
-		//Do this.
 		ros::spinOnce();
 		r.sleep();
 

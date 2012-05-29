@@ -5,7 +5,7 @@
 \b sonarSpammer is ... 
 
 <!-- 
-Provide an overview of your package.
+Designed to emulate the data produced by the sonar or sonar2 driver, this is useful when unable to test a node dependent on these without the sonar itself. Currently the spammer on generates random values, at some point it would be useful to have this reading from a map at a set location and producing values based on this.
 -->
 
 
