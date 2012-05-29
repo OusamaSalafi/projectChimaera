@@ -31,10 +31,12 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 
 	/* Subscribe */
 
-	ros::Subscriber sub1 = motorN.subscribe("pidRampFront",	100, frontCallback);
-	ros::Subscriber sub2 = motorN.subscribe("pidRampLeft",	100, leftCallback);
-	ros::Subscriber sub3 = motorN.subscribe("pidRampRight",	100, rightCallback);
-	ros::Subscriber sub4 = motorN.subscribe("pidRampBack",	100, backCallback);
+	ros::Subscriber sub1 = motorN.subscribe("pidRampDepthRight",	100, depthRightCallback);
+	ros::Subscriber sub2 = motorN.subscribe("pidRampDepthLeft",		100, depthLeftCallback);
+	ros::Subscriber sub3 = motorN.subscribe("pidRampYawRight",		100, yawRightCallback);
+	ros::Subscriber sub4 = motorN.subscribe("pidRampYawLeft",		100, yawLeftCallback);
+	ros::Subscriber sub7 = motorN.subscribe("pidRampPitch",			100, pitchCallback);
+	
 	ros::Subscriber sub5 = motorN.subscribe("pilotGo",	100, goCallback);
 	ros::Subscriber sub6 = motorN.subscribe("alertFront",	100, alertCallback);
 
@@ -54,10 +56,12 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		ros::spin();
 	}
 
-	updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-	updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-	updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-	updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+	updatePWM(DEPTH_RIGHT_CHANNEL, 	ZERO_DUTY_CYCLE_US);
+	updatePWM(DEPTH_LEFT_CHANNEL, 	ZERO_DUTY_CYCLE_US);
+	updatePWM(YAW_RIGHT_CHANNEL, 	ZERO_DUTY_CYCLE_US);
+	updatePWM(YAW_LEFT_CHANNEL, 	ZERO_DUTY_CYCLE_US);
+	updatePWM(PITCH_CHANNEL, 		ZERO_DUTY_CYCLE_US);
+	
 	//updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 
 	printf("Shutting Down\n");
@@ -87,91 +91,114 @@ void alertCallback(const std_msgs::UInt32::ConstPtr& alertFront){
 }
 
 /*************************************************
-** Returns the PWM rate for the front motor	**
+** Returns the PWM rate for the depth (right) motor	**
 *************************************************/
 
-void frontCallback(const std_msgs::UInt32::ConstPtr& pidRampFront){
-	frontPWM = pidRampFront->data;
+void depthRightCallback(const std_msgs::UInt32::ConstPtr& pidRampDepthRight){
+	depthRightPWM = pidRampDepthRight->data;
 
-	ROS_DEBUG("Front: %u",frontPWM);
+	ROS_DEBUG("Depth (right): %u",depthRightPWM);
 	if(go == 1){
 		#ifdef DEBUG
-		frontPWM = DEBUGSPEED;
+		depthRightPWM = DEBUGSPEED;
 		#endif
-		updatePWM(FRONT_MOTOR_CHANNEL, frontPWM);
+		updatePWM(DEPTH_RIGHT_CHANNEL, depthRightPWM);
 		go = 0;
 	}
 	else{
-		updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+		updatePWM(DEPTH_RIGHT_CHANNEL, ZERO_DUTY_CYCLE_US);
 	}
 	return;
 }
 
 /*************************************************
-** Returns the PWM rate for the left motor	**
+** Returns the PWM rate for the depth (left) motor	**
 *************************************************/
 
-void leftCallback(const std_msgs::UInt32::ConstPtr& pidRampLeft){
-	leftPWM = pidRampLeft->data;
+void depthLeftCallback(const std_msgs::UInt32::ConstPtr& pidRampDepthLeft){
+	depthLeftPWM = pidRampDepthLeft->data;
 
-	ROS_DEBUG("Left: %u",leftPWM);
+	ROS_DEBUG("Depth (left): %u",depthLeftPWM);
 	
 	if(go2 == 1){
 		#ifdef DEBUG
-		leftPWM = DEBUGSPEED;
+		depthLeftPWM = DEBUGSPEED;
 		#endif
-		updatePWM(LEFT_MOTOR_CHANNEL, leftPWM);
+		updatePWM(DEPTH_LEFT_CHANNEL, depthLeftPWM);
 		go2 = 0;
 	}
 	else{
-		updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+		updatePWM(DEPTH_LEFT_CHANNEL, ZERO_DUTY_CYCLE_US);
 	}
 	return;
 }
 
 /*************************************************
-** Returns the PWM rate for the right motor	**
+** Returns the PWM rate for the yaw (right) motor	**
 *************************************************/
 
-void rightCallback(const std_msgs::UInt32::ConstPtr& pidRampRight){
-	rightPWM = pidRampRight->data;
+void yawRightCallback(const std_msgs::UInt32::ConstPtr& pidRampYawRight){
+	yawRightPWM = pidRampYawRight->data;
 
-	ROS_DEBUG("Right: %u",rightPWM);
+	ROS_DEBUG("Yaw (right): %u",yawRightPWM);
 	
 	if(go3 == 1){
 		#ifdef DEBUG
-		rightPWM = DEBUGSPEED;
+		yawRightPWM = DEBUGSPEED;
 		#endif
-		updatePWM(RIGHT_MOTOR_CHANNEL, rightPWM);
+		updatePWM(YAW_RIGHT_CHANNEL, yawRightPWM);
 		go3 = 0;
 	}
 	else{
-		updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+		updatePWM(YAW_RIGHT_CHANNEL, ZERO_DUTY_CYCLE_US);
 	}
 	return;
 }
 
 /*************************************************
-** Returns the PWM rate for the back motor	**
+** Returns the PWM rate for the yaw (left) motor	**
 *************************************************/
 
-void backCallback(const std_msgs::UInt32::ConstPtr& pidRampBack){
-	backPWM = pidRampBack->data;
+void yawLeftCallback(const std_msgs::UInt32::ConstPtr& pidRampYawLeft){
+	yawLeftPWM = pidRampYawLeft->data;
 
-	ROS_DEBUG("Back: %u",backPWM);
+	ROS_DEBUG("yaw (left): %u",yawLeftPWM);
 	
 	if(go4 == 1){
 		#ifdef DEBUG
-		backPWM = DEBUGSPEED;
+		yawLeftPWM = DEBUGSPEED;
 		#endif
-		updatePWM(BACK_MOTOR_CHANNEL, backPWM);
+		updatePWM(YAW_LEFT_CHANNEL, yawLeftPWM);
 		go4 = 0;
 	}
 	else{
-		updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+		updatePWM(YAW_LEFT_CHANNEL, ZERO_DUTY_CYCLE_US);
 	}
 	return;
 }
+
+/*************************************************
+** Returns the PWM rate for the pitch motor	**
+*************************************************/
+
+void pitchCallback(const std_msgs::UInt32::ConstPtr& pidRampPitch){
+	pitchPWM = pidRampPitch->data;
+
+	ROS_DEBUG("Pitch: %u",pitchPWM);
+	
+	if(go4 == 1){
+		#ifdef DEBUG
+		pitchPWM = DEBUGSPEED;
+		#endif
+		updatePWM(PITCH_CHANNEL, pitchPWM);
+		go4 = 0;
+	}
+	else{
+		updatePWM(PITCH_CHANNEL, ZERO_DUTY_CYCLE_US);
+	}
+	return;
+}
+
 
 /*************************************************
 ** Initialises the motors			**
@@ -188,24 +215,24 @@ int initMotors(void){
 	}
 
         // Set the channels to produce a zero velocity PWM
-        pwm_SetPulse( LEFT_MOTOR_CHANNEL, PWM_FREQUENCY_US, (ZERO_DUTY_CYCLE_US + LEFT_PWM_OFFSET));
-        pwm_SetPulse( RIGHT_MOTOR_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + RIGHT_PWM_OFFSET );
-        pwm_SetPulse( FRONT_MOTOR_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + FRONT_PWM_OFFSET );
-        pwm_SetPulse( BACK_MOTOR_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + BACK_PWM_OFFSET );
-        //pwm_SetPulse( TEST_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + BACK_PWM_OFFSET );
+        pwm_SetPulse( DEPTH_RIGHT_CHANNEL, PWM_FREQUENCY_US, (ZERO_DUTY_CYCLE_US + DEPTH_RIGHT_PWM_OFFSET));
+        pwm_SetPulse( DEPTH_LEFT_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + DEPTH_LEFT_PWM_OFFSET );
+        pwm_SetPulse( YAW_RIGHT_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + YAW_RIGHT_PWM_OFFSET );
+        pwm_SetPulse( YAW_LEFT_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + YAW_LEFT_PWM_OFFSET );
+        pwm_SetPulse( PITCH_CHANNEL, PWM_FREQUENCY_US, ZERO_DUTY_CYCLE_US + PITCH_PWM_OFFSET );
 
-        pwm_SetCountingMode( LEFT_MOTOR_CHANNEL, PWM_CONTINUE_MODE );
-        pwm_SetCountingMode( RIGHT_MOTOR_CHANNEL, PWM_CONTINUE_MODE );
-        pwm_SetCountingMode( FRONT_MOTOR_CHANNEL, PWM_CONTINUE_MODE );
-        pwm_SetCountingMode( BACK_MOTOR_CHANNEL, PWM_CONTINUE_MODE );
-        //pwm_SetCountingMode( TEST_CHANNEL, PWM_CONTINUE_MODE );
+        pwm_SetCountingMode( DEPTH_RIGHT_CHANNEL, PWM_CONTINUE_MODE );
+        pwm_SetCountingMode( DEPTH_LEFT_CHANNEL, PWM_CONTINUE_MODE );
+        pwm_SetCountingMode( YAW_RIGHT_CHANNEL, PWM_CONTINUE_MODE );
+        pwm_SetCountingMode( YAW_LEFT_CHANNEL, PWM_CONTINUE_MODE );
+        pwm_SetCountingMode( PITCH_CHANNEL, PWM_CONTINUE_MODE );
         
         // Enable the pins
-        pwm_EnablePin( LEFT_MOTOR_CHANNEL );
-        pwm_EnablePin( FRONT_MOTOR_CHANNEL );
-        pwm_EnablePin( RIGHT_MOTOR_CHANNEL );
-        pwm_EnablePin( BACK_MOTOR_CHANNEL );
-        pwm_EnablePin( TEST_CHANNEL );
+        pwm_EnablePin( DEPTH_RIGHT_CHANNEL );
+        pwm_EnablePin( YAW_RIGHT_CHANNEL );
+        pwm_EnablePin( DEPTH_LEFT_CHANNEL );
+        pwm_EnablePin( YAW_LEFT_CHANNEL );
+        pwm_EnablePin( PITCH_CHANNEL );
 
 	ROS_INFO("Motors Initialised");
 
@@ -224,11 +251,11 @@ void updatePWM(unsigned int channel, unsigned int rate){
 	unsigned int tmpOffset=0;
 
 	switch(channel){
-		case	FRONT_MOTOR_CHANNEL:	tmpOffset = FRONT_PWM_OFFSET;	break;
-		case	LEFT_MOTOR_CHANNEL:	tmpOffset = LEFT_PWM_OFFSET;	break;
-		case	RIGHT_MOTOR_CHANNEL:	tmpOffset = RIGHT_PWM_OFFSET;	break;
-		case	BACK_MOTOR_CHANNEL:	tmpOffset = BACK_PWM_OFFSET;	break;
-		//case	TEST_CHANNEL:		tmpOffset = 0;			break;
+		case	DEPTH_RIGHT_CHANNEL:	tmpOffset = DEPTH_RIGHT_PWM_OFFSET;	break;
+		case	DEPTH_LEFT_CHANNEL:		tmpOffset = DEPTH_LEFT_PWM_OFFSET;	break;
+		case	YAW_RIGHT_CHANNEL:		tmpOffset = YAW_RIGHT_PWM_OFFSET;	break;
+		case	YAW_LEFT_CHANNEL:		tmpOffset = YAW_LEFT_PWM_OFFSET;	break;
+		case	PITCH_CHANNEL:			tmpOffset = PITCH_PWM_OFFSET;		break;
 		default: ROS_ERROR("Dude this is not a valid PWM channel");	break;
 	}
 
