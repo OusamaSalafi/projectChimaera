@@ -1,3 +1,15 @@
+//* sonar2
+/**
+* Based on the original sonar driver but a better termios setup.
+*
+* The driver is designed to read the sonar and output data, 
+*  sonarBeaing - the angle the sonar is facing.
+*  sonarBins - the bin that is detected as a "hit" (first value over a set threshold)
+*  sonarBinsArr - the full bins in the form of an array.
+*/
+
+/** @todo Output data in the form of a laserScan message. */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>

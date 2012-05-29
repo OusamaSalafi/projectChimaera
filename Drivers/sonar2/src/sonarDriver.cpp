@@ -42,12 +42,12 @@
 
 #define	ADSPAN			81
 #define	ADLOW			8
-#define	GAIN			99 //10
-#define	ADINTERVAL		30//30 // samples taken per bin
+#define	GAIN			99	//10
+#define	ADINTERVAL		30	//30 // samples taken per bin
 #define MIN_AD_INTERVAL 5
 
-#define	NUMBEROFBINS	90//90//90//200 //
-#define STEPANGLE		8 // 2- 32-ish //4 // 
+#define	NUMBEROFBINS	90	//90//90//200 //
+#define STEPANGLE		8 	// 2- 32-ish //4 // 
 #define MOTIME			10
 
 #define WRITEDEL		250000//
@@ -56,16 +56,16 @@
 
 struct termios orig_terimos;
 
-int RANGE = 3;//75;
-int LEFTANGLE = 0; //2399 = 135 degrees // 0
-int RIGHTANGLE = 6399; // 4000 = 225 degrees // 6399
-int SCANSTARE = 0x23; //or 0x2B // 0x23
+int RANGE = 		3;		//75;
+int LEFTANGLE = 	0; 		//2399 = 135 degrees // 0
+int RIGHTANGLE = 	6399; 	// 4000 = 225 degrees // 6399
+int SCANSTARE = 	0x23; 	//or 0x2B // 0x23
 
 int fd; 							/* File descriptor for the port */
 unsigned char returnBuffer[500]; 	/*Buffer which stores read data*/
 unsigned char *rBptr;				/*Ptr*/
 
-unsigned char 	header,		//Message Header. 
+unsigned char	header,		//Message Header. 
 				hLength,	//Hex Length of whole binary packet
 				bLength,	//Binary Word of above Hex Length.
 				sID,		//Packet Source Identification
@@ -74,12 +74,12 @@ unsigned char 	header,		//Message Header.
 				msg[263],	//Command / Reply Message
 				term;		//Message Terminator
 
-unsigned int	bins,
+unsigned int 	bins,
 				bearing;		
 
-unsigned int bp1_temp[263],	//Clone dataset, for bad packet recovery
-			bp1_buffLen,
-			bp1_bLength;
+unsigned int 	bp1_temp[263],	//Clone dataset, for bad packet recovery
+				bp1_buffLen,
+				bp1_bLength;
 
 //byte byteBins[45];
 
@@ -105,7 +105,6 @@ int main( int argc, char **argv )
 	//ros::Publisher nodenameVariablenameMsg = handle.outsidness<libraryname::type>("nodenameVariablename", bufflen?);					
 	ros::Publisher sonarBearingMsg = n.advertise<std_msgs::Float32>("sonarBearing", 100);
 	ros::Publisher sonarBinsMsg = n.advertise<std_msgs::Float32>("sonarBins", 100);
-	
 	ros::Publisher sonarBinsArrMsg = n.advertise<std_msgs::Int32MultiArray>("sonarBinsArr", 100);
 
 	
@@ -115,13 +114,13 @@ int main( int argc, char **argv )
 
 	std_msgs::Float32 sonarBearing;
 	std_msgs::Float32 sonarBins;
-	
 	std_msgs::Int32MultiArray sonarBinsArr;
 
 
 	/* Open and Configure the Serial Port. */
 	open_port();	
 
+	//Check if port is open
 	if( tcgetattr(fd, &orig_terimos) < 0)
 	{
 		ROS_ERROR("Probably didn't get the serial port (is it connected?).\n");
@@ -136,7 +135,7 @@ int main( int argc, char **argv )
 
 	/* Initilise the sonar */
 	//usleep(WRITEDEL);
-		//usleep(WRITEDEL);
+	//usleep(WRITEDEL);
 	tcflush(fd, TCIFLUSH);
 	read_port();
 	tcflush(fd, TCIFLUSH);
@@ -146,12 +145,19 @@ int main( int argc, char **argv )
 	/* optional, sendBBUser command, doesnt work :/ */
 	//sendBB();
 
-
+	/**
+	* ROS main loop, will run while everything is good.
+	*/
 	while(ros::ok())
 	{
 
-		switchCmd = 1;
-		//Stare LL
+		switchCmd = 1; //Force scanner, rather than Stare LL.
+		
+		/*! \brief Sonar Stare Left Limit
+		*
+		*  The sonar is able to run in full scanning mode or "Stare", here it 
+		*  keeps its bearing to the left limit currently set.
+		*/
 		if(switchCmd == 0)
 		{
 
@@ -209,7 +215,11 @@ int main( int argc, char **argv )
 
 //			}
 		}
-		//scanner
+		/*! \brief Sonar Scanning mode.
+		*
+		*  The sonar is able to run in full scanning mode or "Stare", here it 
+		*  uses the scanner mode.
+		*/
 		else
 		{
 			
@@ -280,9 +290,11 @@ int main( int argc, char **argv )
 	return 0;
 }
 
-/*********************************
-** Opens serial port S0		**
-*********************************/
+/*! \fn open_port
+    \brief Opens serial port S0.
+
+    This functions sets up the serial port ready for the sonar.
+*/
 int open_port(void)
 {	
 
@@ -377,10 +389,11 @@ tcsetattr(fd, TCSANOW, &options);
 
 //}
 
-/*************************************************
-** Tries to transmit the message to the compass	**
-** which will get it to send some info back	**
-*************************************************/
+/*! \fn write_port
+    \brief Writes data to the serial port.
+
+    Tries to transmit a sonar message to the sonar.
+*/
 int write_port(unsigned char sendBuffer[SENDBUFFSIZE], unsigned int sendSize)
 {
 
@@ -420,10 +433,12 @@ int write_port_fast(unsigned char sendBuffer[SENDBUFFSIZE], unsigned int sendSiz
 	return (n);
 }
 */
-/*************************************************
-** Reads data off of the serial port and will	**
-** then return the data into returnBuffer	**
-*************************************************/
+
+/*! \fn read_port
+    \brief Reads data from the serial port.
+
+    Reads data from the serial port and stores data in returnBuffer.
+*/
 int read_port(void){	
 /*Commented out wed.28.2011
 	int n;
@@ -484,10 +499,11 @@ int read_port(void){
 	return p;
 }
 
-/*************************************************
-** When called will add together the inputs to make a U32
-* hacked from taylords code
-*************************************************/
+/*! \fn getU32
+    \brief Adds together inputs to make U32.
+
+    Combines values to create a U32.
+*/
 unsigned int getU32(unsigned int tmp1, unsigned int tmp2, unsigned int tmp3, unsigned int tmp4)
 {
 
@@ -500,10 +516,11 @@ unsigned int getU32(unsigned int tmp1, unsigned int tmp2, unsigned int tmp3, uns
 	return tmp1;
 }
 
-/*************************************************
-** When called will add together the inputs to make a U16
-* hacked from taylords code
-*************************************************/
+/*! \fn getU16
+    \brief Takes 2 inputs and outputs 1 U16.
+
+    Combines two inputs to create a U16.
+*/
 unsigned int getU16(unsigned int tmp1, unsigned int tmp2)
 {
 
@@ -514,30 +531,35 @@ unsigned int getU16(unsigned int tmp1, unsigned int tmp2)
 	return tmp1;		//return the U16
 }
 
-/*************************************************
-** When called will sift through the buffer in	**
-** an attempt to obtain a uint 8		**
-*************************************************/
+
+/*! \fn getU8
+    \brief Obtains U8.
+
+    When called will sift through the buffer in an attempt
+    * to obtaina a uint 8.
+*/
 unsigned int getU8(void)
 {
 	return *rBptr++;	//returns the current point on the array and shifts along (a U8)
 }
 
-/**************************************************************** 
-SeaNet General Packet Format is;
-*	'@'		:	Message Header = '@' (0x40).
-*	HHHH	:	Hex Length of whole binary packet (excluding LF Terminator).
-*	BB		:	Binary Word of above Hex Length.
-*	SID		:	Packet Source Identification (Tx Node number 0 - 255).
-*	DID		:	Packet Destination Identification (Rx Node number 0 -255).
-*	COUNT	:	Byte Count of attached message that follows this byte.
-*	MSG		:	Command / Reply Message (i.e. 'Alive' command, 'Data Reply' message).
-*	TERM	:	Message Terminator = Line Feed (0Ah).
-* 
-*	Returns -1 if failed, 1 if correct first time, 2 if it had to 
-* 	stich packets
-* 
-****************************************************************/
+/*! \fn sortPacket
+    \brief Sorts a packet as per below.
+
+    SeaNet General Packet Format is;
+	'@'		:	Message Header = '@' (0x40).
+	HHHH	:	Hex Length of whole binary packet (excluding LF Terminator).
+	BB		:	Binary Word of above Hex Length.
+	SID		:	Packet Source Identification (Tx Node number 0 - 255).
+	DID		:	Packet Destination Identification (Rx Node number 0 -255).
+	COUNT	:	Byte Count of attached message that follows this byte.
+	MSG		:	Command / Reply Message (i.e. 'Alive' command, 'Data Reply' message).
+	TERM	:	Message Terminator = Line Feed (0Ah).
+ 
+	Returns -1 if failed, 1 if correct first time, 2 if it had to 
+ 	stich packets
+
+*/
 int sortPacket(void)
 {
 
@@ -640,21 +662,21 @@ int sortPacket(void)
 	return packetFlag; 
 }
 
-/*************************************************
- * just returns the first value of the msg 
- * *********************************************/
+/*! \fn returnMsg
+    \brief returns first value of the msg.
+*/
 int returnMsg(void)
 {
 	return msg[0];
 }
 
-/************************************************
- * 
- *  Create a packet to send and stores it in sendBuffer
- * takes the command and returns the command that has
- * been sent.
- * 
- * *********************************************/
+ /*! \fn makePacket
+    \brief Creates a packet.
+
+    Create a packet to send and stores it in sendBuffer
+	takes the command and returns the command that has
+	been sent
+*/
 void makePacket(int command)
 {
 
@@ -733,9 +755,11 @@ void makePacket(int command)
 
 }
 
-/************************************************
- *  make a packet for sending mtHeadCommand
- * *********************************************/
+/*! \fn makeHeadPacket
+    \brief makes mtHeadCommand.
+
+    Make a packet for sending mtHeadCommand.
+*/
 void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int endAngle, unsigned int ADspan, 
 					unsigned int ADlow, unsigned int gain, unsigned int ADInterval, unsigned int numBins)
 {
@@ -835,12 +859,13 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 
 }
 
-/**********************************************
- * Find the length of the packet
- * Flag = 0 - sendBuffer
- * Flag = 1 - recvBuffer
- * Returns packet length, -1 if error.
- * *******************************************/
+/*! \fn packetLength
+    \brief Find the length of the packet.
+
+	Flag = 0 - sendBuffer
+	Flag = 1 - recvBuffer
+	Returns packet length, -1 if error
+*/
 int packetLength(int flag)
 {
 
@@ -869,12 +894,12 @@ int packetLength(int flag)
 	}
 }
 
-/**********************************************
- * Initilise sonar,
- * check alive, send version request, check for
- * reply
- * returns 1 if set up, -1 if failed.
- * *******************************************/
+/*! \fn initSonar
+    \brief Initilise the sonar.
+
+	check alive, send version request, check for reply
+	returns 1 if set up, -1 if failed.r
+*/
 int initSonar( void )
 {
 
@@ -920,7 +945,9 @@ int initSonar( void )
 	return 0;
 
 }
-
+/*! \fn sendBB
+    \brief 
+*/
 int sendBB( void )
 {
 	int bbFlag = 0;
@@ -944,7 +971,9 @@ int sendBB( void )
 	return 0;
 
 }
-
+/*! \fn headSetup
+    \brief 
+*/
 int headSetup( void )
 {
 
@@ -988,7 +1017,9 @@ int headSetup( void )
 	return 0;
 
 }
-
+/*! \fn requestData
+    \brief 
+*/
 int requestData( void )
 {
 
@@ -1053,10 +1084,9 @@ int requestData( void )
 
 }
 
-/*************************************************
-** Returns the sonar cmd **
-*************************************************/
-
+/*! \fn cmdCallback
+    \brief Returns the sonar cmd.
+*/
 void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 {
 	switchCmd = sonarCmd->data;
@@ -1064,20 +1094,21 @@ void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 	return;
 }
 
-/*************************************************
-** Returns the sonar range **
-*************************************************/
-
+/*! \fn rangeCallback
+    \brief Returns the sonarRange.
+*/
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange)
 {
 	RANGE = sonarRange->data;
 	return;
 }
 
-/*************************************************
-** Returns the sonar left angle **
-*************************************************/
 
+/*! \fn leftCallback
+    \brief Returnss the sonarLeft.
+    
+    Returns the left limit, used for stare value.
+*/
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 {
 	LEFTANGLE = sonarLeft->data;
