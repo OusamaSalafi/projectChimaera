@@ -2,6 +2,26 @@
 
 #define BAUDRATE B115200
 #define SENDBUFFSIZE 82
+
+//#define	RANGE			75 //200
+//#define	LEFTANGLE		0
+//#define	RIGHTANGLE		6399
+//#define 	SCANSTARE 0x23
+
+#define	ADSPAN			81
+#define	ADLOW			8
+#define	GAIN			99	//10
+#define	ADINTERVAL		30	//30 // samples taken per bin
+#define MIN_AD_INTERVAL 5
+
+#define	NUMBEROFBINS	90	//90//90//200 //
+#define STEPANGLE		8 	// 2- 32-ish //4 // 
+#define MOTIME			10
+
+#define WRITEDEL		250000//
+
+#define THRESHOLD 		207
+
 //Sonar commands
 #define mtNull					0
 #define mtVersionData			1	
@@ -68,3 +88,5 @@ int requestData( void );
 void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd);
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange);
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft);
+
+sensor_msgs::LaserScan createLaserData(int sonarBinArray[NUMBEROFBINS]);

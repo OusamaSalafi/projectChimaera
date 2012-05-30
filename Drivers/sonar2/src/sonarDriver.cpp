@@ -27,6 +27,8 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Int32.h"
 
+#include "sensor_msgs/LaserScan.h"
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -34,25 +36,6 @@
 
 #include "sonarDriver.h"
 //#include "Serial.h"
-
-//#define	RANGE			75 //200
-//#define	LEFTANGLE		0
-//#define	RIGHTANGLE		6399
-//#define 	SCANSTARE 0x23
-
-#define	ADSPAN			81
-#define	ADLOW			8
-#define	GAIN			99	//10
-#define	ADINTERVAL		30	//30 // samples taken per bin
-#define MIN_AD_INTERVAL 5
-
-#define	NUMBEROFBINS	90	//90//90//200 //
-#define STEPANGLE		8 	// 2- 32-ish //4 // 
-#define MOTIME			10
-
-#define WRITEDEL		250000//
-
-#define THRESHOLD 		207
 
 struct termios orig_terimos;
 
@@ -96,7 +79,7 @@ int tempBinArray[NUMBEROFBINS];
 int main( int argc, char **argv )
 {
 
-	int i, j;
+	int i; //, j;
 
 	ros::init(argc, argv, "sonar");
 
@@ -106,7 +89,8 @@ int main( int argc, char **argv )
 	ros::Publisher sonarBearingMsg = n.advertise<std_msgs::Float32>("sonarBearing", 100);
 	ros::Publisher sonarBinsMsg = n.advertise<std_msgs::Float32>("sonarBins", 100);
 	ros::Publisher sonarBinsArrMsg = n.advertise<std_msgs::Int32MultiArray>("sonarBinsArr", 100);
-
+	ros::Publisher sonarScanMsg = n.advertise<sensor_msgs::LaserScan>("sonarScan", 100);
+	
 	
 	ros::Subscriber sub1 = n.subscribe("sonarCmd", 100, cmdCallback);
 	ros::Subscriber sub2 = n.subscribe("sonarRange", 100, rangeCallback);
@@ -115,6 +99,7 @@ int main( int argc, char **argv )
 	std_msgs::Float32 sonarBearing;
 	std_msgs::Float32 sonarBins;
 	std_msgs::Int32MultiArray sonarBinsArr;
+	sensor_msgs::LaserScan sonarScan;
 
 
 	/* Open and Configure the Serial Port. */
@@ -262,10 +247,15 @@ int main( int argc, char **argv )
 					sonarBinsArr.data.push_back(tempBinArray[k]);
 				}
 
+				// Create laser scan data from the sonar bins array.
+				sonarScan = createLaserData(tempBinArray);
+				
 				//publish
 				sonarBearingMsg.publish(sonarBearing);
 				sonarBinsMsg.publish(sonarBins);
 				sonarBinsArrMsg.publish(sonarBinsArr);
+				
+				sonarScanMsg.publish(sonarScan);
 
 				//ROS_INFO("Bearing: %f, Bins: %f", bearing, bins);
 				//printf("%d - %d\n", bearing, bins);
@@ -601,7 +591,7 @@ int sortPacket(void)
 
 	//Clear msg buffer first
 	for(i = 0; i < 263; i++)
-		msg[i] = NULL;
+		msg[i] = 0;
 
 	msgLen = 0;
 
@@ -1114,4 +1104,45 @@ void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 	LEFTANGLE = sonarLeft->data;
 	RIGHTANGLE = sonarLeft->data + (1600);
 	return;
+}
+/*! \fn createLaserData
+    \brief Returns the sonar data as a LaserScan.
+    
+    Returns the sonar binaries in the form of a LaserScan to be 
+    * published for use by SLAM.
+*/
+sensor_msgs::LaserScan createLaserData(int sonarBinArray[NUMBEROFBINS])
+{
+	
+	//Set Up - Might not work being done every time it's needed.:
+	sensor_msgs::LaserScan sonarScan;
+	
+	double sonar_frequency = 2000; //same as usleep???
+	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
+	
+	sonarScan.header.frame_id = "/sonarSpammer"; 
+
+	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
+	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
+	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+
+	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+
+	sonarScan.range_min = 0.833333333;
+	sonarScan.range_max = 75;
+	
+	ros::Time scan_time = ros::Time::now();
+	
+	//Run each time
+	for (int i = 0; i < 90; i++)
+		{
+			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges.push_back(sonarBinArray[i]);
+		}
+
+	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
+	
+	return sonarScan;
+	
+	//sonarScanMsg.publish(sonarScan);
 }
