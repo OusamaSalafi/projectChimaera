@@ -89,4 +89,5 @@ void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd);
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange);
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft);
 
-sensor_msgs::LaserScan createLaserData(int sonarBinArray[NUMBEROFBINS]);
+void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBEROFBINS], ros::Time scan_time);
+void initLaserData(sensor_msgs::LaserScan& sonarScan);
