@@ -1,0 +1,14 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b missionTimer 
+
+<!-- 
+missionTimer is used to stop the sub going over time in a run, the time for a run can be set in the file "~/projectChimaera/missionLength.txt". 
+-->
+
+-->
+
+
+*/

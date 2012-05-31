@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	string line;
 
 	//Get missionLength from file:
-	ifstream timerFile ("/home/uwesub/projectChimaera/missionLength.txt");
+	ifstream timerFile ("/home/uwesub/projectChimaera/Config/missionTimer_missionLength.txt");
 	if (timerFile.is_open())		//Open file (and check if it opened);
 	{
 		getline (timerFile,line);	//Read first line

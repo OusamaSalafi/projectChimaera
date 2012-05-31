@@ -1,0 +1,7 @@
+Directory to store all configuration file, makes it easier to make changes when everything is in one place.
+
+Naming structure:
+
+nodeName_description.filetype
+
+e.g missionTimer_missionLength.ini

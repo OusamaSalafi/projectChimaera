@@ -9,6 +9,7 @@
 */
 
 /** @todo Output data in the form of a laserScan message. */
+/** @todo intergrate SVP */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +44,8 @@ int RANGE = 		3;		//75;
 int LEFTANGLE = 	0; 		//2399 = 135 degrees // 0
 int RIGHTANGLE = 	6399; 	// 4000 = 225 degrees // 6399
 int SCANSTARE = 	0x23; 	//or 0x2B // 0x23
+
+double VOS = 1000.0;
 
 int fd; 							/* File descriptor for the port */
 unsigned char returnBuffer[500]; 	/*Buffer which stores read data*/
@@ -758,20 +761,29 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 					unsigned int ADlow, unsigned int gain, unsigned int ADInterval, unsigned int numBins)
 {
 
+	//
 	int drange = range * 10;
+	//
 	const unsigned int MAX_GAIN = 210;
 	unsigned int gainByte = (gain * MAX_GAIN);
 	//unsigned char sendBuffer[82];
 
-	double pingtime = 2.0 * range * 1000.0 / 1.5; // in usec
+	//Calculate the ADInterval using VOS and maths found in SeaNet_Son_Protocol.pdf
+	double pingtime = 2.0 * range * VOS / 1.5; // in usec
     double bintime = pingtime / numBins;
     ADInterval = round( (bintime/64.0)*100.0 );
-
+	
+	//Make sure it's in range:
 	if ( ADInterval < MIN_AD_INTERVAL )
 	{
 		//fprintf( stderr, "Error: Unable to make AD interval small enough\n" );
 		printf("AD interval too small\n");
-		//ADInterval = MIN_AD_INTERVAL;
+		ADInterval = MIN_AD_INTERVAL;
+	}
+	if ( ADInterval > MAX_AD_INTERVAL)
+	{
+		printf("AD interval too big\n");
+		ADInterval = MAX_AD_INTERVAL
 	}
 
 					//Step 1, setup
