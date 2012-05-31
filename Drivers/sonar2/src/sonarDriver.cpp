@@ -783,7 +783,7 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 	if ( ADInterval > MAX_AD_INTERVAL)
 	{
 		printf("AD interval too big\n");
-		ADInterval = MAX_AD_INTERVAL
+		ADInterval = MAX_AD_INTERVAL;
 	}
 
 					//Step 1, setup

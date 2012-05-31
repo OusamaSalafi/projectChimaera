@@ -12,7 +12,8 @@
 #define	ADLOW			8
 #define	GAIN			99	//10
 #define	ADINTERVAL		30	//30 // samples taken per bin
-#define MIN_AD_INTERVAL 5
+#define MIN_AD_INTERVAL 5		//
+#define MAX_AD_INTERVAL	800		//
 
 #define	NUMBEROFBINS	90	//90//90//200 //
 #define STEPANGLE		8 	// 2- 32-ish //4 // 
