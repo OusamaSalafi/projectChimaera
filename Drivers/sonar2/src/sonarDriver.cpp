@@ -219,14 +219,14 @@ int main( int argc, char **argv )
 			if(switchFlag == 0)
 			{
 				
-				//SCANSTARE = 0x23;
-				//RANGE = 75;
-				//LEFTANGLE = 4800;
-				//RIGHTANGLE = LEFTANGLE -1;
-				//SCANSTARE = 0x2B;
-				//RANGE = 50;
-				//LEFTANGLE = 2399;
-				//RIGHTANGLE = 4000;
+				SCANSTARE = 0x23;
+				RANGE = 75;
+				LEFTANGLE = 4800;
+				RIGHTANGLE = LEFTANGLE -1;
+				SCANSTARE = 0x2B;
+				RANGE = 50;
+				LEFTANGLE = 2399;
+				RIGHTANGLE = 4000;
 				headSetup();
 				switchFlag = 1;
 				
@@ -302,7 +302,7 @@ int open_port(void)
 	
 	// Open Serial Port...
 	
-	fd = open("/dev/ttyUSB1", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
 	
 	tcgetattr(fd, &options);              		// Get the current options for the port...
 	options.c_iflag |= (IGNBRK | IGNPAR);
