@@ -11,7 +11,7 @@
 #define MIN_AD_INTERVAL 5
 
 #define	NUMBEROFBINS		90//200
-#define STEPANGLE		8
+#define STEPANGLE		32
 #define MOTIME			25
 
 #define WRITEDEL		250000//
@@ -87,5 +87,7 @@ int requestData( void );
 void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd);
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange);
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft);
+
 void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBEROFBINS], ros::Time scan_time);
 void initLaserData(sensor_msgs::LaserScan& sonarScan);
+

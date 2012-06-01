@@ -32,9 +32,9 @@
 #define	ADLOW			8
 #define	GAIN			99 //10
 #define	ADINTERVAL		30//30 // samples taken per bin
-#define MIN_AD_INTERVAL 5
+#define MIN_AD_INTERVAL 	5
 
-#define	NUMBEROFBINS	90//90//90//200 //
+#define	NUMBEROFBINS		90//90//90//200 //
 #define STEPANGLE		32 // 2- 32-ish //4 // 
 #define MOTIME			10
 
@@ -138,7 +138,7 @@ int main( int argc, char **argv )
 	while(ros::ok())
 	{
 
-		switchCmd = 0;// SWITCH MODE STARE
+		switchCmd = 1;// SWITCH MODE STARE
 		//Stare LL
 		if(switchCmd == 0)
 		{
@@ -282,7 +282,7 @@ int open_port(void)
 	// Open Serial Port...
 
 	//fd = open("/dev/ttyUSB1", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
-	fd = open("/dev/ttyUSB7", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
 	tcgetattr(fd, &options);              		// Get the current options for the port...
 	options.c_iflag |= (IGNBRK | IGNPAR);
 	options.c_iflag &= ~(IXON | IXOFF);
@@ -996,7 +996,7 @@ int requestData( void )
 		//	usleep(50);//remove
 			makePacket(mtSendData);
 			// Send two packets if in half duplex rs485 mode????????????????????????????????????????????????????####
-			makePacket(mtSendData);
+			//makePacket(mtSendData);
 			ROS_INFO("requestData \t>> mtSendData\n");
 			//tcflush(fd, TCIFLUSH);//remove
 			//usleep(50);//remove
@@ -1029,7 +1029,7 @@ int requestData( void )
 				//	usleep(500);//remove
 					makePacket(mtSendData);
 					// Send two packets if in half duplex rs485 mode????????????????????????????????????????????????????####
-					makePacket(mtSendData);
+					//makePacket(mtSendData);
 					ROS_INFO("requestData \t>> mtSendData\n");
 					sendFlag = 1;	
 					count = 0;

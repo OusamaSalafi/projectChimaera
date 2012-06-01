@@ -21,10 +21,10 @@
 
 struct termios orig_terimos;
 
-int RANGE = 45;
+int RANGE = 5;
 int LEFTANGLE = 0;
 int RIGHTANGLE = 6399;
-int SCANSTARE = 0x23; //or 0x2B
+int SCANSTARE = 0x2B; //or 0x2B
 
 int fd; 							/* File descriptor for the port */
 unsigned char returnBuffer[500]; 	/*Buffer which stores read data*/
@@ -1036,7 +1036,7 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 	double sonar_frequency = 2000; //same as usleep???
 	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
-	sonarScan.header.frame_id = "/sonar"; 
+	sonarScan.header.frame_id = "/sonar2"; 
 
 	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
 	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
@@ -1044,7 +1044,7 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 
 	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
-	sonarScan.range_min = RANGE/ NUMBEROFBINS;
-	sonarScan.range_max = RANGE;
+	sonarScan.range_min = 0.833333333;
+	sonarScan.range_max = 75;
 
 }
