@@ -1,13 +1,13 @@
 <package>
-  <description brief="sonar2">
+  <description brief="sonar">
 
-     sonar2
+     sonar
 
   </description>
-  <author>Alex Sleat</author>
+  <author>Bootstrap Bill</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/sonar2</url>
+  <url>http://ros.org/wiki/sonar</url>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
 

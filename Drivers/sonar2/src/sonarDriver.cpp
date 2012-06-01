@@ -1,15 +1,3 @@
-//* sonar2
-/**
-* Based on the original sonar driver but a better termios setup.
-*
-* The driver is designed to read the sonar and output data, 
-*  sonarBeaing - the angle the sonar is facing.
-*  sonarBins - the bin that is detected as a "hit" (first value over a set threshold)
-*  sonarBinsArr - the full bins in the form of an array.
-*/
-
-/** @todo Output data in the form of a laserScan message. */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
@@ -27,8 +15,6 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Int32.h"
 
-#include "sensor_msgs/LaserScan.h"
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -37,18 +23,37 @@
 #include "sonarDriver.h"
 //#include "Serial.h"
 
+//#define	RANGE			75 //200
+//#define	LEFTANGLE		0
+//#define	RIGHTANGLE		6399
+//#define 	SCANSTARE 0x23
+
+#define	ADSPAN			81
+#define	ADLOW			8
+#define	GAIN			99 //10
+#define	ADINTERVAL		30//30 // samples taken per bin
+#define MIN_AD_INTERVAL 5
+
+#define	NUMBEROFBINS	90//90//90//200 //
+#define STEPANGLE		32 // 2- 32-ish //4 // 
+#define MOTIME			10
+
+#define WRITEDEL		250000//
+
+#define THRESHOLD 		207
+
 struct termios orig_terimos;
 
-int RANGE = 		3;		//75;
-int LEFTANGLE = 	0; 		//2399 = 135 degrees // 0
-int RIGHTANGLE = 	6399; 	// 4000 = 225 degrees // 6399
-int SCANSTARE = 	0x23; 	//or 0x2B // 0x23
+int RANGE = 75;//75;
+int LEFTANGLE = 0; //2399 = 135 degrees // 0
+int RIGHTANGLE = 6399; // 4000 = 225 degrees // 6399
+int SCANSTARE = 0x23; //or 0x2B // 0x23
 
 int fd; 							/* File descriptor for the port */
 unsigned char returnBuffer[500]; 	/*Buffer which stores read data*/
 unsigned char *rBptr;				/*Ptr*/
 
-unsigned char	header,		//Message Header. 
+unsigned char 	header,		//Message Header. 
 				hLength,	//Hex Length of whole binary packet
 				bLength,	//Binary Word of above Hex Length.
 				sID,		//Packet Source Identification
@@ -57,12 +62,12 @@ unsigned char	header,		//Message Header.
 				msg[263],	//Command / Reply Message
 				term;		//Message Terminator
 
-unsigned int 	bins,
+unsigned int	bins,
 				bearing;		
 
-unsigned int 	bp1_temp[263],	//Clone dataset, for bad packet recovery
-				bp1_buffLen,
-				bp1_bLength;
+unsigned int bp1_temp[263],	//Clone dataset, for bad packet recovery
+			bp1_buffLen,
+			bp1_bLength;
 
 //byte byteBins[45];
 
@@ -79,7 +84,7 @@ int tempBinArray[NUMBEROFBINS];
 int main( int argc, char **argv )
 {
 
-	int i; //, j;
+	int i, j;
 
 	ros::init(argc, argv, "sonar");
 
@@ -88,9 +93,9 @@ int main( int argc, char **argv )
 	//ros::Publisher nodenameVariablenameMsg = handle.outsidness<libraryname::type>("nodenameVariablename", bufflen?);					
 	ros::Publisher sonarBearingMsg = n.advertise<std_msgs::Float32>("sonarBearing", 100);
 	ros::Publisher sonarBinsMsg = n.advertise<std_msgs::Float32>("sonarBins", 100);
-	ros::Publisher sonarBinsArrMsg = n.advertise<std_msgs::Int32MultiArray>("sonarBinsArr", 100);
-	ros::Publisher sonarScanMsg = n.advertise<sensor_msgs::LaserScan>("sonarScan", 100);
 	
+	ros::Publisher sonarBinsArrMsg = n.advertise<std_msgs::Int32MultiArray>("sonarBinsArr", 100);
+
 	
 	ros::Subscriber sub1 = n.subscribe("sonarCmd", 100, cmdCallback);
 	ros::Subscriber sub2 = n.subscribe("sonarRange", 100, rangeCallback);
@@ -98,18 +103,13 @@ int main( int argc, char **argv )
 
 	std_msgs::Float32 sonarBearing;
 	std_msgs::Float32 sonarBins;
+	
 	std_msgs::Int32MultiArray sonarBinsArr;
-	sensor_msgs::LaserScan sonarScan;
 
-	ros::Time scan_time = ros::Time::now();
-
-	//Set up a LaserScan message:
-	initLaserData(sonarScan);
 
 	/* Open and Configure the Serial Port. */
 	open_port();	
 
-	//Check if port is open
 	if( tcgetattr(fd, &orig_terimos) < 0)
 	{
 		ROS_ERROR("Probably didn't get the serial port (is it connected?).\n");
@@ -124,7 +124,7 @@ int main( int argc, char **argv )
 
 	/* Initilise the sonar */
 	//usleep(WRITEDEL);
-	//usleep(WRITEDEL);
+		//usleep(WRITEDEL);
 	tcflush(fd, TCIFLUSH);
 	read_port();
 	tcflush(fd, TCIFLUSH);
@@ -134,19 +134,12 @@ int main( int argc, char **argv )
 	/* optional, sendBBUser command, doesnt work :/ */
 	//sendBB();
 
-	/**
-	* ROS main loop, will run while everything is good.
-	*/
+
 	while(ros::ok())
 	{
 
-		switchCmd = 1; //Force scanner, rather than Stare LL.
-		
-		/*! \brief Sonar Stare Left Limit
-		*
-		*  The sonar is able to run in full scanning mode or "Stare", here it 
-		*  keeps its bearing to the left limit currently set.
-		*/
+		switchCmd = 0;// SWITCH MODE STARE
+		//Stare LL
 		if(switchCmd == 0)
 		{
 
@@ -204,11 +197,7 @@ int main( int argc, char **argv )
 
 //			}
 		}
-		/*! \brief Sonar Scanning mode.
-		*
-		*  The sonar is able to run in full scanning mode or "Stare", here it 
-		*  uses the scanner mode.
-		*/
+		//scanner
 		else
 		{
 			
@@ -251,15 +240,10 @@ int main( int argc, char **argv )
 					sonarBinsArr.data.push_back(tempBinArray[k]);
 				}
 
-				// Create laser scan data from the sonar bins array.
-				createLaserData(sonarScan, tempBinArray, scan_time);
-				
 				//publish
 				sonarBearingMsg.publish(sonarBearing);
 				sonarBinsMsg.publish(sonarBins);
 				sonarBinsArrMsg.publish(sonarBinsArr);
-				
-				sonarScanMsg.publish(sonarScan);
 
 				//ROS_INFO("Bearing: %f, Bins: %f", bearing, bins);
 				//printf("%d - %d\n", bearing, bins);
@@ -284,11 +268,9 @@ int main( int argc, char **argv )
 	return 0;
 }
 
-/*! \fn open_port
-    \brief Opens serial port S0.
-
-    This functions sets up the serial port ready for the sonar.
-*/
+/*********************************
+** Opens serial port S0		**
+*********************************/
 int open_port(void)
 {	
 
@@ -298,9 +280,9 @@ int open_port(void)
 		struct termios options;
 	
 	// Open Serial Port...
-	
-	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
-	
+
+	//fd = open("/dev/ttyUSB1", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
+	fd = open("/dev/ttyUSB7", O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
 	tcgetattr(fd, &options);              		// Get the current options for the port...
 	options.c_iflag |= (IGNBRK | IGNPAR);
 	options.c_iflag &= ~(IXON | IXOFF);
@@ -383,11 +365,10 @@ tcsetattr(fd, TCSANOW, &options);
 
 //}
 
-/*! \fn write_port
-    \brief Writes data to the serial port.
-
-    Tries to transmit a sonar message to the sonar.
-*/
+/*************************************************
+** Tries to transmit the message to the compass	**
+** which will get it to send some info back	**
+*************************************************/
 int write_port(unsigned char sendBuffer[SENDBUFFSIZE], unsigned int sendSize)
 {
 
@@ -427,12 +408,10 @@ int write_port_fast(unsigned char sendBuffer[SENDBUFFSIZE], unsigned int sendSiz
 	return (n);
 }
 */
-
-/*! \fn read_port
-    \brief Reads data from the serial port.
-
-    Reads data from the serial port and stores data in returnBuffer.
-*/
+/*************************************************
+** Reads data off of the serial port and will	**
+** then return the data into returnBuffer	**
+*************************************************/
 int read_port(void){	
 /*Commented out wed.28.2011
 	int n;
@@ -493,11 +472,10 @@ int read_port(void){
 	return p;
 }
 
-/*! \fn getU32
-    \brief Adds together inputs to make U32.
-
-    Combines values to create a U32.
-*/
+/*************************************************
+** When called will add together the inputs to make a U32
+* hacked from taylords code
+*************************************************/
 unsigned int getU32(unsigned int tmp1, unsigned int tmp2, unsigned int tmp3, unsigned int tmp4)
 {
 
@@ -510,11 +488,10 @@ unsigned int getU32(unsigned int tmp1, unsigned int tmp2, unsigned int tmp3, uns
 	return tmp1;
 }
 
-/*! \fn getU16
-    \brief Takes 2 inputs and outputs 1 U16.
-
-    Combines two inputs to create a U16.
-*/
+/*************************************************
+** When called will add together the inputs to make a U16
+* hacked from taylords code
+*************************************************/
 unsigned int getU16(unsigned int tmp1, unsigned int tmp2)
 {
 
@@ -525,35 +502,30 @@ unsigned int getU16(unsigned int tmp1, unsigned int tmp2)
 	return tmp1;		//return the U16
 }
 
-
-/*! \fn getU8
-    \brief Obtains U8.
-
-    When called will sift through the buffer in an attempt
-    * to obtaina a uint 8.
-*/
+/*************************************************
+** When called will sift through the buffer in	**
+** an attempt to obtain a uint 8		**
+*************************************************/
 unsigned int getU8(void)
 {
 	return *rBptr++;	//returns the current point on the array and shifts along (a U8)
 }
 
-/*! \fn sortPacket
-    \brief Sorts a packet as per below.
-
-    SeaNet General Packet Format is;
-	'@'		:	Message Header = '@' (0x40).
-	HHHH	:	Hex Length of whole binary packet (excluding LF Terminator).
-	BB		:	Binary Word of above Hex Length.
-	SID		:	Packet Source Identification (Tx Node number 0 - 255).
-	DID		:	Packet Destination Identification (Rx Node number 0 -255).
-	COUNT	:	Byte Count of attached message that follows this byte.
-	MSG		:	Command / Reply Message (i.e. 'Alive' command, 'Data Reply' message).
-	TERM	:	Message Terminator = Line Feed (0Ah).
- 
-	Returns -1 if failed, 1 if correct first time, 2 if it had to 
- 	stich packets
-
-*/
+/**************************************************************** 
+SeaNet General Packet Format is;
+*	'@'		:	Message Header = '@' (0x40).
+*	HHHH	:	Hex Length of whole binary packet (excluding LF Terminator).
+*	BB		:	Binary Word of above Hex Length.
+*	SID		:	Packet Source Identification (Tx Node number 0 - 255).
+*	DID		:	Packet Destination Identification (Rx Node number 0 -255).
+*	COUNT	:	Byte Count of attached message that follows this byte.
+*	MSG		:	Command / Reply Message (i.e. 'Alive' command, 'Data Reply' message).
+*	TERM	:	Message Terminator = Line Feed (0Ah).
+* 
+*	Returns -1 if failed, 1 if correct first time, 2 if it had to 
+* 	stich packets
+* 
+****************************************************************/
 int sortPacket(void)
 {
 
@@ -595,7 +567,7 @@ int sortPacket(void)
 
 	//Clear msg buffer first
 	for(i = 0; i < 263; i++)
-		msg[i] = 0;
+		msg[i] = NULL;
 
 	msgLen = 0;
 
@@ -656,21 +628,21 @@ int sortPacket(void)
 	return packetFlag; 
 }
 
-/*! \fn returnMsg
-    \brief returns first value of the msg.
-*/
+/*************************************************
+ * just returns the first value of the msg 
+ * *********************************************/
 int returnMsg(void)
 {
 	return msg[0];
 }
 
- /*! \fn makePacket
-    \brief Creates a packet.
-
-    Create a packet to send and stores it in sendBuffer
-	takes the command and returns the command that has
-	been sent
-*/
+/************************************************
+ * 
+ *  Create a packet to send and stores it in sendBuffer
+ * takes the command and returns the command that has
+ * been sent.
+ * 
+ * *********************************************/
 void makePacket(int command)
 {
 
@@ -749,11 +721,9 @@ void makePacket(int command)
 
 }
 
-/*! \fn makeHeadPacket
-    \brief makes mtHeadCommand.
-
-    Make a packet for sending mtHeadCommand.
-*/
+/************************************************
+ *  make a packet for sending mtHeadCommand
+ * *********************************************/
 void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int endAngle, unsigned int ADspan, 
 					unsigned int ADlow, unsigned int gain, unsigned int ADInterval, unsigned int numBins)
 {
@@ -853,13 +823,12 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 
 }
 
-/*! \fn packetLength
-    \brief Find the length of the packet.
-
-	Flag = 0 - sendBuffer
-	Flag = 1 - recvBuffer
-	Returns packet length, -1 if error
-*/
+/**********************************************
+ * Find the length of the packet
+ * Flag = 0 - sendBuffer
+ * Flag = 1 - recvBuffer
+ * Returns packet length, -1 if error.
+ * *******************************************/
 int packetLength(int flag)
 {
 
@@ -888,12 +857,12 @@ int packetLength(int flag)
 	}
 }
 
-/*! \fn initSonar
-    \brief Initilise the sonar.
-
-	check alive, send version request, check for reply
-	returns 1 if set up, -1 if failed.r
-*/
+/**********************************************
+ * Initilise sonar,
+ * check alive, send version request, check for
+ * reply
+ * returns 1 if set up, -1 if failed.
+ * *******************************************/
 int initSonar( void )
 {
 
@@ -919,6 +888,7 @@ int initSonar( void )
 
 		}
 		// Did we get back mtVersionData and is the alive flag set?
+		//else if( returnMsg() == mtVersionData && initAlive == 1)###############################shitytytytytytytytytyyt hax
 		else if( returnMsg() == mtVersionData && initAlive == 1)
 		{
 			ROS_INFO("initSonar \t<< mtVersionData!\n");
@@ -939,9 +909,7 @@ int initSonar( void )
 	return 0;
 
 }
-/*! \fn sendBB
-    \brief 
-*/
+
 int sendBB( void )
 {
 	int bbFlag = 0;
@@ -965,9 +933,7 @@ int sendBB( void )
 	return 0;
 
 }
-/*! \fn headSetup
-    \brief 
-*/
+
 int headSetup( void )
 {
 
@@ -1011,9 +977,7 @@ int headSetup( void )
 	return 0;
 
 }
-/*! \fn requestData
-    \brief 
-*/
+
 int requestData( void )
 {
 
@@ -1030,6 +994,8 @@ int requestData( void )
 		//	usleep(50);//remove
 		//	tcflush(fd, TCIFLUSH);//remove
 		//	usleep(50);//remove
+			makePacket(mtSendData);
+			// Send two packets if in half duplex rs485 mode????????????????????????????????????????????????????####
 			makePacket(mtSendData);
 			ROS_INFO("requestData \t>> mtSendData\n");
 			//tcflush(fd, TCIFLUSH);//remove
@@ -1062,6 +1028,8 @@ int requestData( void )
 				//	tcflush(fd, TCIFLUSH);//remove
 				//	usleep(500);//remove
 					makePacket(mtSendData);
+					// Send two packets if in half duplex rs485 mode????????????????????????????????????????????????????####
+					makePacket(mtSendData);
 					ROS_INFO("requestData \t>> mtSendData\n");
 					sendFlag = 1;	
 					count = 0;
@@ -1078,9 +1046,10 @@ int requestData( void )
 
 }
 
-/*! \fn cmdCallback
-    \brief Returns the sonar cmd.
-*/
+/*************************************************
+** Returns the sonar cmd **
+*************************************************/
+
 void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 {
 	switchCmd = sonarCmd->data;
@@ -1088,69 +1057,23 @@ void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 	return;
 }
 
-/*! \fn rangeCallback
-    \brief Returns the sonarRange.
-*/
+/*************************************************
+** Returns the sonar range **
+*************************************************/
+
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange)
 {
 	RANGE = sonarRange->data;
 	return;
 }
 
+/*************************************************
+** Returns the sonar left angle **
+*************************************************/
 
-/*! \fn leftCallback
-    \brief Returnss the sonarLeft.
-    
-    Returns the left limit, used for stare value.
-*/
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 {
 	LEFTANGLE = sonarLeft->data;
 	RIGHTANGLE = sonarLeft->data + (1600);
 	return;
-}
-/*! \fn createLaserData
-    \brief Returns the sonar data as a LaserScan.
-    
-    Returns the sonar binaries in the form of a LaserScan to be 
-    * published for use by SLAM.
-*/
-void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBEROFBINS], ros::Time scan_time)
-{
-		
-	//Run each time
-	for (int i = 0; i < 90; i++)
-		{
-			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
-			sonarScan.ranges.push_back(sonarBinArray[i]);
-		}
-
-	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
-	
-	//sonarScanMsg.publish(sonarScan);
-}
-/*! \fn initLaserData
-    \brief Sets up a LaserScan message.
-    
-    Creates a LaserScan message which gets the sonar readings put in.
-*/
-void initLaserData(sensor_msgs::LaserScan& sonarScan)
-{
-	
-	//Set Up - Might not work being done every time it's needed.:
-	
-	double sonar_frequency = 2000; //same as usleep???
-	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
-	
-	sonarScan.header.frame_id = "/sonar2"; 
-
-	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
-	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
-	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
-
-	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
-
-	sonarScan.range_min = 0.833333333;
-	sonarScan.range_max = 75;
-
 }
