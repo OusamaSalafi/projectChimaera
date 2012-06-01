@@ -15,30 +15,13 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Int32.h"
 
+#include "sensor_msgs/LaserScan.h"
+
 #include "sonarDriver.h"
-
-//#define	RANGE			75 //200
-//#define	LEFTANGLE		0
-//#define	RIGHTANGLE		6399
-//#define 	SCANSTARE 0x23
-
-#define	ADSPAN			81
-#define	ADLOW			8
-#define	GAIN			84
-#define	ADINTERVAL		104
-#define MIN_AD_INTERVAL 5
-
-#define	NUMBEROFBINS	90//200
-#define STEPANGLE		8
-#define MOTIME			20
-
-#define WRITEDEL		250000//
-
-#define THRESHOLD 		207
 
 struct termios orig_terimos;
 
-int RANGE = 75;
+int RANGE = 45;
 int LEFTANGLE = 0;
 int RIGHTANGLE = 6399;
 int SCANSTARE = 0x23; //or 0x2B
@@ -87,8 +70,8 @@ int main( int argc, char **argv )
 	//ros::Publisher nodenameVariablenameMsg = handle.outsidness<libraryname::type>("nodenameVariablename", bufflen?);					
 	ros::Publisher sonarBearingMsg = n.advertise<std_msgs::Float32>("sonarBearing", 100);
 	ros::Publisher sonarBinsMsg = n.advertise<std_msgs::Float32>("sonarBins", 100);
-	
 	ros::Publisher sonarBinsArrMsg = n.advertise<std_msgs::Int32MultiArray>("sonarBinsArr", 100);
+	ros::Publisher sonarScanMsg = n.advertise<sensor_msgs::LaserScan>("sonarScan", 100);
 
 	
 	ros::Subscriber sub1 = n.subscribe("sonarCmd", 100, cmdCallback);
@@ -97,8 +80,13 @@ int main( int argc, char **argv )
 
 	std_msgs::Float32 sonarBearing;
 	std_msgs::Float32 sonarBins;
-	
 	std_msgs::Int32MultiArray sonarBinsArr;
+	sensor_msgs::LaserScan sonarScan;
+	
+	ros::Time scan_time = ros::Time::now();
+
+	//Set up a LaserScan message:
+	initLaserData(sonarScan);
 
 
 	/* Open and Configure the Serial Port. */
@@ -126,7 +114,7 @@ int main( int argc, char **argv )
 	while(ros::ok())
 	{
 
-		switchCmd = 0;
+		switchCmd = 1;
 		//Stare LL
 		if(switchCmd == 0)
 		{
@@ -134,10 +122,10 @@ int main( int argc, char **argv )
 			/* Make and send the head parameters, currently defined at the top of this file */
 			if(switchFlag == 0)
 			{
-				SCANSTARE = 0x2B;
-				RANGE = 5;
-				LEFTANGLE = 3200;
-				RIGHTANGLE = 3300;
+				//SCANSTARE = 0x2B;
+				//RANGE = 5;
+				//LEFTANGLE = 3200;
+				//RIGHTANGLE = 3300;
 				
 				headSetup();
 				switchFlag = 1;
@@ -189,10 +177,10 @@ int main( int argc, char **argv )
 			if(switchFlag == 0)
 			{
 				
-				SCANSTARE = 0x23;
-				RANGE = 75;
-				LEFTANGLE = 4800;
-				RIGHTANGLE = LEFTANGLE -1;
+				//SCANSTARE = 0x23;
+				//RANGE = 75;
+				//LEFTANGLE = 4800;
+				//RIGHTANGLE = LEFTANGLE -1;
 				
 				headSetup();
 				switchFlag = 1;
@@ -220,10 +208,15 @@ int main( int argc, char **argv )
 					sonarBinsArr.data.push_back(tempBinArray[k]);
 				}
 
+				// Create laser scan data from the sonar bins array.
+				createLaserData(sonarScan, tempBinArray, scan_time);
+
 				//publish
 				sonarBearingMsg.publish(sonarBearing);
 				sonarBinsMsg.publish(sonarBins);
 				sonarBinsArrMsg.publish(sonarBinsArr);
+				
+				sonarScanMsg.publish(sonarScan);
 
 				//ROS_INFO("Bearing: %f, Bins: %f", bearing, bins);
 				//printf("%d - %d\n", bearing, bins);
@@ -322,6 +315,8 @@ tcsetattr(fd, TCSANOW, &options);
 	tcsetattr(fd, TCSANOW, &options1);
 
 	return;
+
+
 }
 
 /*************************************************
@@ -388,6 +383,7 @@ int read_port(void){
 	rBptr = &returnBuffer[0];
 	//sleep(1);
 	return n;
+
 }
 
 /*************************************************
@@ -651,17 +647,34 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 	unsigned int gainByte = (gain * MAX_GAIN);
 	unsigned char sendBuffer[82];
 
-	double pingtime = 2.0 * range * 1000.0 / 1.5; // in usec
-    double bintime = pingtime / numBins;
-    ADInterval = round( (bintime/64.0)*100.0 );
+
+	//Calculate timings using (2*range)/ 1500 = pingtime
+	double pingtime = (2.0 * range) / 1500.0; // / 1.5; // in usec
+	//ping time needs to be in us, so it'll be like 0.06s but that should be 60us
+	pingtime = pingtime * 1000;
+	//bintime is 
+    	double bintime = pingtime / numBins;
+    	//again needs to be in ns not us so 
+    	bintime = bintime * 1000;
+    	//
+    	ADInterval = round( (bintime/64.0)*1000.0 );
+    	
+    	ADInterval = 104;
+    	
+    	printf("ADInterval : %d\n", ADInterval);
 
 	if ( ADInterval < MIN_AD_INTERVAL )
 	{
 		//fprintf( stderr, "Error: Unable to make AD interval small enough\n" );
 		printf("AD interval too small\n");
-		//ADInterval = MIN_AD_INTERVAL;
+		ADInterval = MIN_AD_INTERVAL;
 	}
-
+	if ( ADInterval > 800 )
+	{
+		//fprintf( stderr, "Error: Unable to make AD interval big enough\n" );
+		printf("AD interval too big\n");
+		ADInterval = 800;
+	}
 					//Step 1, setup
 	sendBuffer = { 	0x40,						//Header
 					0x30, 0x30, 0x34, 0x43, 	//Hex Length
@@ -674,7 +687,7 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 					0x80,
 					0x02,
 					0x1D,						//Head Command Type - 1 = Normal, 29 Dual Channel
-					0x85, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
+					0xC5, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
 					0x03,						//Head Type
 					0x99, 0x99, 0x99, 0x02,		//TxN Channel 1
 					0x66, 0x66, 0x66, 0x05,		//TxN Channel 2
@@ -989,4 +1002,49 @@ void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 	LEFTANGLE = sonarLeft->data;
 	RIGHTANGLE = sonarLeft->data + (1600);
 	return;
+}
+/*! \fn createLaserData
+    \brief Returns the sonar data as a LaserScan.
+    
+    Returns the sonar binaries in the form of a LaserScan to be 
+    * published for use by SLAM.
+*/
+void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBEROFBINS], ros::Time scan_time)
+{
+		
+	//Run each time
+	for (int i = 0; i < 90; i++)
+		{
+			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges.push_back(sonarBinArray[i]);
+		}
+
+	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
+	
+	//sonarScanMsg.publish(sonarScan);
+}
+/*! \fn initLaserData
+    \brief Sets up a LaserScan message.
+    
+    Creates a LaserScan message which gets the sonar readings put in.
+*/
+void initLaserData(sensor_msgs::LaserScan& sonarScan)
+{
+	
+	//Set Up - Might not work being done every time it's needed.:
+	
+	double sonar_frequency = 2000; //same as usleep???
+	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
+	
+	sonarScan.header.frame_id = "/sonar"; 
+
+	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
+	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
+	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+
+	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+
+	sonarScan.range_min = RANGE/ NUMBEROFBINS;
+	sonarScan.range_max = RANGE;
+
 }
