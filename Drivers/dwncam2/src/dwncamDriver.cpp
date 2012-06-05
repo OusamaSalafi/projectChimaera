@@ -42,10 +42,16 @@ protected:
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
 	cv::Mat img_tmp_;
+	cv::Mat img_regions_;
 	
 	IplImage *cv_input_;
 	//to hold Ipl of input image so histograms can be generated
 	IplImage *img_inh_;
+	
+	int regions_allocated_, pixelcount_, region_count_, largest_regions_count_, pixels_passed_, is_pipe_, i_, j_, k_, l_, m_, n_, n2_;
+	int *regions_, *region_lengths_, *largest_regions_;
+	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_, sy2_, sxx2_, sxy2_, alpha2_, beta2_;
+	CvPoint point1_, point2_;
 
 
 public:
@@ -62,6 +68,8 @@ public:
 		//cv::namedWindow ("segmented output", 1);
 		//cv::namedWindow ("preprocessed image", 1);
 		ROS_INFO("Opened window?");
+		regions_allocated_ = 0;
+		pixelcount_ = -1;
 	}
 
 
@@ -282,6 +290,66 @@ public:
 			return;
 	}
 	
+	
+	
+	// Beware: This function has a small bug for some images. Will fix soon.
+	int findRegions(cv::Mat *img_input, int *regions, int *region_lengths, int colour)
+	{
+		int region_count = 0, pixels_passed = 0, row, col, surrounding_region, joined_region, count;
+		for (row = 0; row < img_input->rows; row++){
+			for (col = 0; col < img_input->cols; col++){
+				if (img_input->at<uchar>(row, col) == colour){
+					surrounding_region = 0;
+					if (row > 0){
+						surrounding_region = regions[pixels_passed - img_input->cols + col];
+						if (surrounding_region == 0 && col > 0){
+							surrounding_region = regions[pixels_passed - img_input->cols + col - 1];
+							if (surrounding_region == 0){
+								surrounding_region = regions[pixels_passed + col - 1];
+							}
+						}
+					}
+					if (surrounding_region == 0){
+						if (row > 0 && col + 1 < img_input->cols){
+							surrounding_region = regions[pixels_passed - img_input->cols + col + 1];
+						}
+						if (surrounding_region == 0){
+							region_count += 1;
+							regions[pixels_passed + col] = region_count;
+							region_lengths[region_count - 1] = 1;
+						} else{
+							regions[pixels_passed + col] = surrounding_region;
+							region_lengths[surrounding_region - 1] += 1;
+						}
+					} else{
+						regions[pixels_passed + col] = surrounding_region;
+						region_lengths[surrounding_region - 1] += 1;
+						if (col + 1 < img_input->cols){
+							if (regions[pixels_passed - img_input->cols + col + 1] != 0 &&
+							regions[pixels_passed - img_input->cols + col + 1] != surrounding_region){
+								joined_region = regions[pixels_passed - img_input->cols + col + 1];
+								for (count = 0; count < pixels_passed + col; count++){
+									if (regions[count] == joined_region){
+										regions[count] = surrounding_region;
+										region_lengths[joined_region - 1] -= 1;
+										region_lengths[surrounding_region - 1] += 1;
+									}
+								}
+							}
+						}
+					}
+				} else{
+					regions[pixels_passed + col] = 0;
+				}
+			}
+			pixels_passed += img_input->cols;
+		}
+		return region_count;
+	}
+	
+	
+	
+	
 	void imageCallback(const sensor_msgs::ImageConstPtr & msg_ptr)
 	{
 		
@@ -403,7 +471,192 @@ public:
 		cv::medianBlur(img_bin_, img_bin_, 9);
 		erode_image(&img_bin_, &img_bin_, erode_passes);
 		dilate_image(&img_bin_, &img_bin_, dilate_passes);
-		findCentre();
+		//findCentre();
+
+
+
+
+
+		// Set The Pixel Count
+		pixelcount_ = img_bin_.cols * img_bin_.rows;
+		
+		// Allocate The Correct Amount Of Memory If Required
+		if (regions_allocated_ != pixelcount_){
+			regions_ = (int*)(malloc(pixelcount_ * sizeof(int)));
+			region_lengths_ = (int*)(malloc(pixelcount_ * sizeof(int)));
+			largest_regions_ = (int*)(malloc(pixelcount_ * sizeof(int)));
+			regions_allocated_ = pixelcount_;
+		}
+
+		// Get White Regions
+		region_count_ = findRegions(&img_bin_, regions_, region_lengths_, 255);
+
+		// Get Largest White Regions
+		img_regions_ = cv::Mat::zeros(img_bin_.rows, img_bin_.cols, CV_8U);
+		if (region_count_ > 0){
+			k_ = 0;
+			m_ = 0;
+			for (i_ = 1; i_ <= region_count_; i_++){
+				if (region_lengths_[i_ - 1] > k_){
+					k_ = region_lengths_[i_ - 1];
+					m_ = i_;
+				}
+			}
+			largest_regions_[0] = m_;
+			largest_regions_count_ = 1;
+			for (i_ = 1; i_ <= region_count_; i_++){
+				if (region_lengths_[i_ - 1] >= (k_ * 0.05)){
+					largest_regions_[largest_regions_count_] = i_;
+					largest_regions_count_ += 1;
+				}
+			}
+			if (m_ > 0){
+				pixels_passed_ = 0;
+				for (i_ = 0; i_ < img_regions_.rows; i_++){
+					for (j_ = 0; j_ < img_regions_.cols; j_++){
+						for (k_ = 0; k_ < largest_regions_count_; k_++){
+							if (regions_[pixels_passed_ + j_] == largest_regions_[k_]){
+								img_regions_.at<uchar>(i_, j_) = 255;
+							}
+						}
+					}
+					pixels_passed_ += img_bin_.cols;
+				}
+			}
+		}
+		
+		// Fill In Enclosed Areas On Largest White Regions
+		region_count_ = findRegions(&img_regions_, regions_, region_lengths_, 0);
+		largest_regions_count_ = 0;
+		for (j_ = 0; j_ < 4; j_++){
+			if (j_ == 0){
+				pixels_passed_ = 0;
+				l_ = img_regions_.rows;
+			} else if (j_ == 1){
+				pixels_passed_ = img_regions_.cols - 1;
+				l_ = img_regions_.rows;
+			} else if (j_ == 2){
+				pixels_passed_ = 1;
+				l_ = img_regions_.cols - 1;
+			} else if (j_ == 3){
+				pixels_passed_ = ((img_regions_.rows - 1) * img_regions_.cols) + 1;
+				l_ = img_regions_.cols - 1;
+			}
+			for (i_ = 0; i_ < l_; i_++){
+				m_ = 0;
+				for (k_ = 0; k_ < largest_regions_count_; k_++){
+					if (regions_[pixels_passed_] == largest_regions_[k_]){
+						m_ = 1;
+						break;
+					}
+				}
+				if (m_ == 0){
+					largest_regions_[largest_regions_count_] = regions_[pixels_passed_];
+					largest_regions_count_ += 1;
+				}
+				if (j_ < 2){
+					pixels_passed_ += img_regions_.cols;
+				} else {
+					pixels_passed_ += 1;
+				}
+			}
+		}
+		pixels_passed_ = 0;
+		for (i_ = 0; i_ < img_regions_.rows; i_++){
+			for (j_ = 0; j_ < img_regions_.cols; j_++){
+				if (regions_[pixels_passed_ + j_] != 0){
+					m_ = 0;
+					for (k_ = 0; k_ < largest_regions_count_; k_++){
+						if (regions_[pixels_passed_ + j_] == largest_regions_[k_]){
+							m_ = 1;
+							break;
+						}
+					}
+					if (m_ == 0){
+						img_regions_.at<uchar>(i_, j_) = 255;
+					}
+				}
+			}
+			pixels_passed_ += img_regions_.cols;
+		}
+		
+		// Check If The Total Area Is Large Enough To Be Considered A Pipe
+		is_pipe_ = 0;
+		for (i_ = 0; i_ < img_regions_.rows; i_++){
+			for (j_ = 0; j_ < img_regions_.cols; j_++){
+				if (img_regions_.at<uchar>(i_, j_) == 255){
+					is_pipe_ += 1;
+					if (is_pipe_ >= 5000){
+						break;
+					}
+				}
+			}
+			if (is_pipe_ >= 5000){
+				break;
+			}
+			pixels_passed_ += img_regions_.cols;
+		}
+		if (is_pipe_ >= 5000){
+			is_pipe_ = 1;
+		} else{
+			is_pipe_ = 0;
+		}
+		
+		// Remove "Cut-Out" Areas
+
+		// Determine The Angle
+		if (is_pipe_ == 1){
+			n_ = 0;
+			sx_ = 0.0;
+			sy_ = 0.0;
+			sxx_ = 0.0;
+			sxy_ = 0.0;
+			n2_ = 0;
+			sx2_ = 0.0;
+			sy2_ = 0.0;
+			sxx2_ = 0.0;
+			sxy2_ = 0.0;
+			for (i_ = 0; i_ < img_regions_.rows; i_++){
+				for (j_ = 0; j_ < img_regions_.cols; j_++){
+					if (img_regions_.at<uchar>(i_, j_) == 255){
+						n_ += 1;
+						sx_ += (double)(j_);
+						sy_ += (double)(i_);
+						sxx_ += (double)(pow(j_, 2.0));
+						sxy_ += (double)(i_ * j_);
+						break;
+					}
+				}
+				for (j_ = img_regions_.cols - 1; j_ >= 0; j_--){
+					if (img_regions_.at<uchar>(i_, j_) == 255){
+						n2_ += 1;
+						sx2_ += (double)(j_);
+						sy2_ += (double)(i_);
+						sxx2_ += (double)(pow(j_, 2.0));
+						sxy2_ += (double)(i_ * j_);
+						break;
+					}
+				}
+			}
+			beta_ = (double)(((double)(n_ * sxy_) - (double)(sx_ * sy_)) / ((double)(n_ * sxx_) - (double)(pow(sx_, 2))));
+			alpha_ = (double)((double)(sy_ / (double)(n_)) - (double)(beta_ * sx_ / (double)(n_)));
+			beta2_ = (double)(((double)(n2_ * sxy2_) - (double)(sx2_ * sy2_)) / ((double)(n2_ * sxx2_) - (double)(pow(sx2_, 2))));
+			alpha2_ = (double)((double)(sy2_ / (double)(n2_)) - (double)(beta2_ * sx2_ / (double)(n2_)));
+			point1_ = {(-alpha_ / beta_), 0};
+			point2_ = {((double)(img_regions_.rows - 1.0 - alpha_) / beta_), img_regions_.rows - 1};
+			line(img_regions_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			point1_ = {(-alpha2_ / beta2_), 0};
+			point2_ = {((double)(img_regions_.rows - 1.0 - alpha2_) / beta2_), img_regions_.rows - 1};
+			line(img_regions_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		}
+
+
+
+
+
+
 
 		// Display Input image
 		cv::imshow ("input", img_in_);
@@ -413,6 +666,8 @@ public:
 		cv::imshow ("binary image", img_bin_);
 		// Display segmented image
 		//cv::imshow ("segmented output", img_out_);
+		// Display The Largest Regions
+		cv::imshow ("largest regions", img_regions_);
 		// Needed to  keep the HighGUI window open
 		cv::waitKey (3);
 
