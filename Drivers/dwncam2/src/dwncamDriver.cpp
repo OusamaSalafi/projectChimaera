@@ -146,7 +146,7 @@ public:
 		//		 Scales for incraesing/decreasing histogarm size
 		//Output: IplImage that contains the histogram
 	/***********************************************************************/
-	IplImage* DrawHistogram(CvHistogram *hist, float scaleX=1, float scaleY=1)
+/*	IplImage* DrawHistogram(CvHistogram *hist, float scaleX=1, float scaleY=1)
 	{
 		float histMax = 0;
 		cvGetMinMaxHistValue(hist, 0, &histMax, 0, 0);
@@ -174,10 +174,43 @@ public:
 		
 		return imgHist;
 	}
+*/
 	//dilate function
 	void dilate_image(const cv::Mat* img_src_, cv::Mat* img_dst_, int passes)
 	{
 		int i, j, k;
+		cv::Mat_<uchar> img_dilate_;
+		cv::Mat_ <float> distance_map_;
+		//if passes == 0 don't try and execute the loop, return gracefully
+		if(passes == 0){return;}
+		//copy the input image so we don't accidently do something silly to it
+		img_dilate_ = img_src_->clone ();
+		//create a distance map (calculates each pixels distance from the closest black pixel)
+		cv::distanceTransform(img_dilate_, distance_map_, CV_DIST_L2, 3);//CV_DIST_L2 and 3x3 apparently gives a fast, coarse estimate (should be good enough for what we need)
+		//do the dirty work, this is basically a threshold of the distance map with the results 
+		//applied to the input image
+		for(i = 0; i < (img_dilate_.rows); i++)
+		{
+				for(j = 0; j < (img_dilate_.cols); j++)
+				{
+					//don't waste time trying to turn pixels that are already black to black
+					if(((int)(distance_map_(i,j)) >= passes) && (distance_map_(i,j) != 0.0))
+					{
+						//if the distance from the current pixel to the closest black (background)
+						//pixel is less or equal to the desired number of passes turn it black
+						img_dilate_(i,j) == 0;
+					}
+				}
+			}
+			//send the new image on its way and release the image memory
+			*img_dst_ = img_dilate_;
+			img_dilate_.release();
+			
+			return;
+		
+		
+	/* old inefficient method
+	 * 
 		int marker = 2;
 		//if passes is zereo return
 		if(passes == 0){return;}
@@ -236,17 +269,45 @@ public:
 					if(img_dilate_(i,j) != 0 && img_dilate_(i,j) != 255){img_dilate_(i,j) = 255;}
 				}
 			}	
-		
+	
 			*img_dst_ = img_dilate_;
 			img_dilate_.release();
-		
+	*/		
 			return;
 	}
 	
 	void erode_image(const cv::Mat* img_src_, cv::Mat* img_dst_, int passes)
 	{
 		int i, j, k;
-		
+		cv::Mat_<uchar> img_erode_;
+		cv::Mat_ <float> distance_map_;
+		//if passes == 0 don't try and execute the loop, return gracefully
+		if(passes == 0){return;}
+		//copy the input image so we don't accidently do something silly to it
+		img_erode_ = img_src_->clone ();
+		//create a distance map (calculates each pixels distance from the closest black pixel)
+		cv::distanceTransform(img_erode_, distance_map_, CV_DIST_L2, 3);//CV_DIST_L2 and a mask of 3x3 apparently gives a fast coarse estimate
+		//do the dirty work, this is basically a threshold of the distance map with the results 
+		//applied to the input image
+		for(i = 0; i < (img_erode_.rows); i++)
+		{
+				for(j = 0; j < (img_erode_.cols); j++)
+				{
+					//don't waste time trying to turn pixels that are already black to black
+					if(((int)(distance_map_(i,j)) >= passes) && (distance_map_(i,j) != 0.0))
+					{
+						//if the distance from the current pixel to the closest black (background)
+						//pixel is less or equal to the desired number of passes turn it black
+						img_erode_(i,j) == 0;
+					}
+				}
+			}
+			//send the new image on its way and release the image memory
+			*img_dst_ = img_erode_;
+			img_erode_.release();
+			
+			return;
+	/*	old 'inefficient' function
 		//if passes is zereo return
 		if(passes == 0){return;}
 		//convert to cv::Mat_ for ease of pixel access
@@ -288,6 +349,8 @@ public:
 			img_erode_.release();
 		
 			return;
+	*/
+	
 	}
 	
 	
@@ -467,11 +530,12 @@ public:
 		//mean filter the binary image
 		
 		//close the image using erosion and dilation
-		img_out_ = img_bin_;
+		//img_in_proc_ = img_bin_.clone();
+		//not convinced the bluring helps that much
 		cv::medianBlur(img_bin_, img_bin_, 9);
 		erode_image(&img_bin_, &img_bin_, erode_passes);
 		dilate_image(&img_bin_, &img_bin_, dilate_passes);
-		//findCentre();
+		findCentre();
 
 
 
@@ -665,16 +729,13 @@ public:
 		// Display Binary Image
 		cv::imshow ("binary image", img_bin_);
 		// Display segmented image
-		//cv::imshow ("segmented output", img_out_);
+	//	cv::imshow ("segmented output", img_in_proc_);
 		// Display The Largest Regions
-		cv::imshow ("largest regions", img_regions_);
+		//cv::imshow ("largest regions", img_regions_);
 		// Needed to  keep the HighGUI window open
 		cv::waitKey (3);
 
 	}
-
-
-	//erode function
 	
 };
 
