@@ -1,23 +1,3 @@
-/*
- *  OpenCV Demo for ROS
- *  Copyright (C) 2010, I Heart Robotics
- *  I Heart Robotics <iheartrobotics@gmail.com>
- *  http://www.iheartrobotics.com
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <ros/ros.h>
 #include "sensor_msgs/Image.h"
 #include "image_transport/image_transport.h"
@@ -25,6 +5,7 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <math.h>
+#include "dwncamDriver.h"
 //For Reading Config Files
 #include "ini.h"
 #include "INIReader.h"
@@ -34,6 +15,9 @@
 int min_hue;
 int max_hue;
 int min_sat;
+//erode/dilate passes
+int erode_passes;
+int dilate_passes;
 	
 // ROS/OpenCV HSV Demo
 // Based on http://www.ros.org/wiki/cv_bridge/Tutorials/UsingCvBridgeToConvertBetweenROSImagesAndOpenCVImages
@@ -49,6 +33,7 @@ protected:
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
 	sensor_msgs::CvBridge bridge_;
+	
 	cv::Mat img_in_;
 	cv::Mat img_in_proc_;
 	cv::Mat img_hsv_;
@@ -56,9 +41,6 @@ protected:
 	cv::Mat img_sat_;
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
-	cv::Mat img_red_;
-	cv::Mat img_green_;
-	cv::Mat img_blue_;
 	cv::Mat img_tmp_;
 	
 	IplImage *cv_input_;
@@ -77,8 +59,8 @@ public:
 		ROS_INFO("Got Cam");
 		cv::namedWindow ("input", 1);
 		cv::namedWindow ("binary image", 1);
-		cv::namedWindow ("segmented output", 1);
-		cv::namedWindow ("preprocessed image", 1);
+		//cv::namedWindow ("segmented output", 1);
+		//cv::namedWindow ("preprocessed image", 1);
 		ROS_INFO("Opened window?");
 	}
 
@@ -184,7 +166,122 @@ public:
 		
 		return imgHist;
 	}
-
+	//dilate function
+	void dilate_image(const cv::Mat* img_src_, cv::Mat* img_dst_, int passes)
+	{
+		int i, j, k;
+		int marker = 2;
+		//if passes is zereo return
+		if(passes == 0){return;}
+		//convert to cv::Mat_ for ease of pixel access
+		cv::Mat_<uchar> img_dilate_;// =  cv::Mat::zeros(img_src_->rows, img_src_->cols, CV_8U);
+		//img_dilate_ = img_src_;
+		img_dilate_ = img_src_->clone ();
+		
+		for(k = 0; k < passes; k++)
+		{
+			//Find a seed pixel
+			//Note bounds restriced 
+			for(i = 1; i < (img_dilate_.rows - 1); i++)
+			{
+					for(j = 1; j < (img_dilate_.cols - 1); j++)
+					{
+						if(marker == 2)
+						{
+							if(img_dilate_(i,j) == 255)
+							{
+								//check 8 neighbouring pixels, mark any black ones
+								if(img_dilate_(i-1,j-1) == 0){img_dilate_(i-1,j-1) = marker;}
+								if(img_dilate_(i-1,j) == 0){img_dilate_(i-1,j) = marker;}
+								if(img_dilate_(i-1,j+1) == 0){img_dilate_(i-1,j+1) = marker;}
+								if(img_dilate_(i,j-1) == 0){img_dilate_(i,j-1) = marker;}
+								if(img_dilate_(i,j+1) == 0){img_dilate_(i,j+1) = 1;}
+								if(img_dilate_(i+1,j-1) == 0){img_dilate_(i,j-1) = marker;}
+								if(img_dilate_(i+1,j) == 0){img_dilate_(i,j) = marker;}
+								if(img_dilate_(i+1,j+1) == 0){img_dilate_(i,j+1) = marker;}
+							}
+						}
+						else
+						{
+							if(img_dilate_(i,j) == marker - 1)
+							{
+								//check 8 neighbouring pixels, mark any black ones
+								if(img_dilate_(i-1,j-1) == 0){img_dilate_(i-1,j-1) = marker;}
+								if(img_dilate_(i-1,j) == 0){img_dilate_(i-1,j) = marker;}
+								if(img_dilate_(i-1,j+1) == 0){img_dilate_(i-1,j+1) = marker;}
+								if(img_dilate_(i,j-1) == 0){img_dilate_(i,j-1) = marker;}
+								if(img_dilate_(i,j+1) == 0){img_dilate_(i,j+1) = 1;}
+								if(img_dilate_(i+1,j-1) == 0){img_dilate_(i,j-1) = marker;}
+								if(img_dilate_(i+1,j) == 0){img_dilate_(i,j) = marker;}
+								if(img_dilate_(i+1,j+1) == 0){img_dilate_(i,j+1) = marker;}
+							}
+						}
+				}
+			}
+			marker++;
+		}
+		
+			for(i = 0; i < (img_dilate_.rows); i++)
+			{
+				for(j = 1; j < (img_dilate_.cols); j++)
+				{	//If the value is anything but black or white, turn it white
+					if(img_dilate_(i,j) != 0 && img_dilate_(i,j) != 255){img_dilate_(i,j) = 255;}
+				}
+			}	
+		
+			*img_dst_ = img_dilate_;
+			img_dilate_.release();
+		
+			return;
+	}
+	
+	void erode_image(const cv::Mat* img_src_, cv::Mat* img_dst_, int passes)
+	{
+		int i, j, k;
+		
+		//if passes is zereo return
+		if(passes == 0){return;}
+		//convert to cv::Mat_ for ease of pixel access
+		cv::Mat_<uchar> img_erode_;// =  cv::Mat::zeros(img_src_->rows, img_src_->cols, CV_8U);
+		//img_dilate_ = img_src_;
+		img_erode_ = img_src_->clone ();
+		
+		for(k = 0; k < passes; k++)
+		{
+			//Find a seed pixel
+			//Note bounds restriced 
+			for(i = 1; i < (img_erode_.rows - 1); i++)
+			{
+					for(j = 1; j < (img_erode_.cols - 1); j++)
+					{
+						if(img_erode_(i,j) == 0)
+						{
+							//check 8 neighbouring pixels, mark any white ones
+							if(img_erode_(i-1,j-1) == 255){img_erode_(i-1,j-1) = 1;}
+							if(img_erode_(i-1,j) == 255){img_erode_(i-1,j) = 1;}
+							if(img_erode_(i-1,j+1) == 255){img_erode_(i-1,j+1) = 1;}
+							if(img_erode_(i,j-1) == 255){img_erode_(i,j-1) = 1;}
+							if(img_erode_(i,j+1) == 255){img_erode_(i,j+1) = 1;}
+							if(img_erode_(i+1,j-1) == 255){img_erode_(i,j-1) = 1;}
+							if(img_erode_(i+1,j) == 255){img_erode_(i,j) = 1;}
+							if(img_erode_(i+1,j+1) == 255){img_erode_(i,j+1) = 1;}
+						}
+					}
+			}
+				for(i = 0; i < (img_erode_.rows); i++)
+				{
+					for(j = 1; j < (img_erode_.cols); j++)
+					{
+						if(img_erode_(i,j) == 1){img_erode_(i,j) = 0;}
+					}
+				}
+		}	
+			*img_dst_ = img_erode_;
+			img_erode_.release();
+		
+			return;
+	}
+	
 	void imageCallback(const sensor_msgs::ImageConstPtr & msg_ptr)
 	{
 		
@@ -232,7 +329,7 @@ public:
 	
 		//filter input image
 
-		
+	/*	
 		cv::vector<cv::Mat> planes;
 		//Apply histogram equlisation to input image 
 		//1: convert input to HSV
@@ -255,12 +352,12 @@ public:
 
         //convert back to a BGR image
 		cv::cvtColor (img_hsv_, img_in_proc_, CV_HSV2BGR);
-		
-		
+	*/	
+	
 		// output = input
-		img_out_ = img_in_proc_.clone ();
+		img_out_ = img_in_.clone ();
 		// Convert Input image from BGR to HSV
-		cv::cvtColor (img_in_proc_, img_hsv_, CV_BGR2HSV);
+		cv::cvtColor (img_in_, img_hsv_, CV_BGR2HSV);
 		// Zero Matrices
 		img_hue_ = cv::Mat::zeros(img_hsv_.rows, img_hsv_.cols, CV_8U);
 		img_sat_ = cv::Mat::zeros(img_hsv_.rows, img_hsv_.cols, CV_8U);
@@ -293,22 +390,37 @@ public:
 			}
 		}
 
+		/*after thresholding the image can still be very 'messy' 
+		* with large amounts of noise, this can cause the cetre to be 
+		* found incorrectly and cause trouble when we try to fing
+		* the pipes angle and estimated size/distance, so it needs to 
+		* be cleaned up 
+		*/
+		//mean filter the binary image
+		
+		//close the image using erosion and dilation
+		img_out_ = img_bin_;
+		cv::medianBlur(img_bin_, img_bin_, 9);
+		erode_image(&img_bin_, &img_bin_, erode_passes);
+		dilate_image(&img_bin_, &img_bin_, dilate_passes);
 		findCentre();
 
 		// Display Input image
-	//	cv::imshow ("input", img_in_);
+		cv::imshow ("input", img_in_);
 		//Display preprocessed input image
 	//	cv::imshow ("preprocessed image", img_in_proc_);
 		// Display Binary Image
 		cv::imshow ("binary image", img_bin_);
 		// Display segmented image
-		cv::imshow ("segmented output", img_out_);
+		//cv::imshow ("segmented output", img_out_);
 		// Needed to  keep the HighGUI window open
 		cv::waitKey (3);
 
 	}
 
 
+	//erode function
+	
 };
 
 
@@ -339,7 +451,10 @@ int main(int argc, char **argv)
 	std::cout << "min_hue = " << max_hue << "\n";
 	min_sat = reader.GetInteger("saturation", "min_sat", 50);
 	std::cout << "min_hue = " << min_sat << "\n";
-	
+	erode_passes = reader.GetInteger("erode", "erode_passes", 5);
+	std::cout << "erode_passes = " << erode_passes << "\n";
+	dilate_passes = reader.GetInteger("dilate", "dilate_passes", 5);
+	std::cout << "dilation_passes = " << dilate_passes << "\n";
   	// Spin ...
 
 
@@ -387,4 +502,3 @@ int main(int argc, char **argv)
 	// ... until done
 	return 0;
 }
-
