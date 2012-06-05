@@ -526,7 +526,7 @@ public:
 		}
 		
 		// Fill In Enclosed Areas On Largest White Regions
-		region_count_ = findRegions(&img_regions_, regions_, region_lengths_, 0);
+/*		region_count_ = findRegions(&img_regions_, regions_, region_lengths_, 0);
 		largest_regions_count_ = 0;
 		for (j_ = 0; j_ < 4; j_++){
 			if (j_ == 0){
@@ -579,7 +579,7 @@ public:
 			}
 			pixels_passed_ += img_regions_.cols;
 		}
-		
+	*/	
 		// Check If The Total Area Is Large Enough To Be Considered A Pipe
 		is_pipe_ = 0;
 		for (i_ = 0; i_ < img_regions_.rows; i_++){
