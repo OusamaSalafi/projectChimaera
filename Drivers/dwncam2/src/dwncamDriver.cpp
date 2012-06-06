@@ -16,7 +16,7 @@ int min_hue;
 int max_hue;
 int min_sat;
 //erode/dilate passes
-int erode_passes;
+float erode_passes;
 int dilate_passes;
 	
 // ROS/OpenCV HSV Demo
@@ -180,34 +180,37 @@ public:
 	{
 		int i, j, k;
 		cv::Mat_<uchar> img_dilate_;
+		cv::Mat_ <uchar> img_inv_;
 		cv::Mat_ <float> distance_map_;
 		//if passes == 0 don't try and execute the loop, return gracefully
 		if(passes == 0){return;}
-		//copy the input image so we don't accidently do something silly to it
+		//copy the input image so we don't accidently doitwise_not something silly to it
 		img_dilate_ = img_src_->clone ();
 		//As the distance map contains the distance for each pixel to the closest black pixel, to dilate
 		//we will need to know the distance to the closest white pixel, easiest way is probably
-		//to invert the input image 
+		//to invert the input image
+		cv::bitwise_not(img_dilate_, img_inv_); 
 		//create a distance map (calculates each pixels distance from the closest black pixel)
-		cv::distanceTransform(img_dilate_, distance_map_, CV_DIST_L2, 3);//CV_DIST_L2 and 3x3 apparently gives a fast, coarse estimate (should be good enough for what we need)
+		cv::distanceTransform(img_inv_, distance_map_, CV_DIST_L2, 3);//CV_DIST_L2 and 3x3 apparently gives a fast, coarse estimate (should be good enough for what we need)
 		//do the dirty work, this is basically a threshold of the distance map with the results 
 		//applied to the input image
 		for(i = 0; i < (img_dilate_.rows); i++)
 		{
 				for(j = 0; j < (img_dilate_.cols); j++)
 				{
-					//don't waste time trying to turn pixels that are already black to black
-					if(((int)(distance_map_(i,j)) >= passes) && (distance_map_(i,j) != 0.0))
+					//don't waste time trying to turn pixels that are already white
+					if(((int)(distance_map_(i,j)) <= passes) && (distance_map_(i,j) != 0.0))
 					{
 						//if the distance from the current pixel to the closest black (background)
 						//pixel is less or equal to the desired number of passes turn it black
-						img_dilate_(i,j) == 255;
+						img_dilate_(i,j) = 255;
 					}
 				}
 			}
 			//send the new image on its way and release the image memory
-			*img_dst_ = img_dilate_;
+			*img_dst_ = img_dilate_.clone();
 			img_dilate_.release();
+			img_inv_.release();
 			
 			return;
 		
@@ -279,7 +282,7 @@ public:
 			return;
 	}
 	
-	void erode_image(const cv::Mat* img_src_, cv::Mat* img_dst_, int passes)
+	void erode_image(const cv::Mat* img_src_, cv::Mat* img_dst_, float passes)
 	{
 		int i, j, k;
 		cv::Mat_<uchar> img_erode_;
@@ -297,16 +300,16 @@ public:
 				for(j = 0; j < (img_erode_.cols); j++)
 				{
 					//don't waste time trying to turn pixels that are already black to black
-					if(((int)(distance_map_(i,j)) >= passes) && (distance_map_(i,j) != 0.0))
+					if(((int)(distance_map_(i,j)) <= passes) && (distance_map_(i,j) != 0.0))
 					{
 						//if the distance from the current pixel to the closest black (background)
 						//pixel is less or equal to the desired number of passes turn it black
-						img_erode_(i,j) == 0;
+						img_erode_(i,j) = 0;
 					}
 				}
 			}
 			//send the new image on its way and release the image memory
-			*img_dst_ = img_erode_;
+			*img_dst_ = img_erode_.clone();
 			img_erode_.release();
 			
 			return;
@@ -533,9 +536,9 @@ public:
 		//mean filter the binary image
 		
 		//close the image using erosion and dilation
-		//img_in_proc_ = img_bin_.clone();
+		img_in_proc_ = img_bin_.clone();
 		//not convinced the bluring helps that much
-		cv::medianBlur(img_bin_, img_bin_, 9);
+	//	cv::medianBlur(img_bin_, img_bin_, 9);
 		erode_image(&img_bin_, &img_bin_, erode_passes);
 		dilate_image(&img_bin_, &img_bin_, dilate_passes);
 		findCentre();
@@ -728,7 +731,7 @@ public:
 		// Display Input image
 		cv::imshow ("input", img_in_);
 		//Display preprocessed input image
-	//	cv::imshow ("preprocessed image", img_in_proc_);
+		cv::imshow ("preprocessed image", img_in_proc_);
 		// Display Binary Image
 		cv::imshow ("binary image", img_bin_);
 		// Display segmented image
@@ -772,7 +775,7 @@ int main(int argc, char **argv)
 	std::cout << "min_hue = " << max_hue << "\n";
 	min_sat = reader.GetInteger("saturation", "min_sat", 50);
 	std::cout << "min_hue = " << min_sat << "\n";
-	erode_passes = reader.GetInteger("erode", "erode_passes", 5);
+	erode_passes = (float)reader.GetInteger("erode", "erode_passes", 5);
 	std::cout << "erode_passes = " << erode_passes << "\n";
 	dilate_passes = reader.GetInteger("dilate", "dilate_passes", 5);
 	std::cout << "dilation_passes = " << dilate_passes << "\n";
