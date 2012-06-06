@@ -202,7 +202,7 @@ int main( int argc, char **argv )
 				//tcflush(fd, TCIFLUSH);//remove
 				//pass datas	
 				
-/*	Hack to fix the bearing mess up between ~3300-3600, dafuq. */
+/*	Hack to fix the bearing mess up between ~3300-3600, dafuq. 
 
 				if( bearingOld > bearing)
 					bearingFail = 1;
@@ -213,7 +213,7 @@ int main( int argc, char **argv )
 				bearing = bearing + 1000;
 				}
 					
-			
+*/			
 				sonarBearing.data = (float) bearing;
 				sonarBins.data = (float) bins;
 				
