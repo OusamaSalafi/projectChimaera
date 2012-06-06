@@ -26,7 +26,12 @@
 #include <opencv/highgui.h>
 #include <math.h>
 #include "std_msgs/UInt32.h"
+#include "../../../Misc/INIReader/src/cpp/INIReader.h"
 
+//Threshold values
+int min_hue;
+int max_hue;
+int min_sat;
 // ROS/OpenCV HSV Demo
 // Based on http://www.ros.org/wiki/cv_bridge/Tutorials/UsingCvBridgeToConvertBetweenROSImagesAndOpenCVImages
 
@@ -65,7 +70,8 @@ class Demo{
 		//cv::namedWindow ("thresh hsv", 1);
 	}
 
-	void findCentre(void){
+	void findCentre(void)
+	{	
 		int x, y, count, x_estimate, y_estimate;
 		int x_draw1, x_draw2, y_draw1, y_draw2;
 		CvScalar s;
@@ -175,23 +181,77 @@ int main(int argc, char **argv){
 	ros::init (argc, argv, "camtest");
 	// Start node and create a Node Handle
 	ros::NodeHandle nh;
+	
+/* 
 	ros::Publisher fwdcamXMsg = nh.advertise<std_msgs::UInt32>("fwdcamX", 100);
 	ros::Publisher fwdcamYMsg = nh.advertise<std_msgs::UInt32>("fwdcamY", 100);
-
 	std_msgs::UInt32 fwdcamX;
 	std_msgs::UInt32 fwdcamY;
+*/
 
 	// Instaniate Demo Object
 	ROS_INFO("Online");
 	Demo d (nh);
-	// Spin ...
+	//Read threshold values from file
+	INIReader reader("../../Config/dwncam2_config.ini");
+	//check the file can be opened
+    if (reader.ParseError() < 0) 
+    {
+        std::cout << "Can't load 'config.ini'\n";
+        return 1;
+    }
+    
+	//read the values in, defaults to best values found for the test video
+	min_hue = reader.GetInteger("hue", "min_hue", 4);
+	std::cout << "min_hue = " << min_hue << "\n";
+	max_hue = reader.GetInteger("hue", "max_hue", 34);
+	std::cout << "min_hue = " << max_hue << "\n";
+	min_sat = reader.GetInteger("saturation", "min_sat", 50);
+	std::cout << "min_hue = " << min_sat << "\n";
+  	// Spin ...
+
+
+
+	/* Leave One Section Uncommented And The Others Commented Out */
+	/* Replace Video/Image Filename If Necessary (Files Should Be Stored In The "dwncam2" Folder) */
+
+
+	/****************** FOR CAMERA INPUT MODE ******************/
+  	//ros::spin();
+	/***********************************************************/
+
+
+	/****************** FOR VIDEO INPUT MODE ******************/
+	cv::Mat video_frame;
+	IplImage video_frame2;
+	sensor_msgs::CvBridge bridge2_;
+	cv::VideoCapture cap("Test.avi");
+    	if(!cap.isOpened()){
+        	return -1;
+	}
 	while(ros::ok()){
 		ros::spinOnce();
-		fwdcamX.data = x_centre;
-		fwdcamY.data = y_centre;
-		fwdcamXMsg.publish(fwdcamX);
-		fwdcamYMsg.publish(fwdcamY);
+		cap >> video_frame;
+		video_frame2 = video_frame;
+		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
 	}
+	/**********************************************************/
+
+
+	/****************** FOR IMAGE INPUT MODE ******************/
+	/*cv::Mat video_frame;
+	IplImage video_frame2;
+	sensor_msgs::CvBridge bridge2_;
+	while(ros::ok()){
+		ros::spinOnce();
+		video_frame = cvLoadImage("a.jpg", CV_LOAD_IMAGE_COLOR);
+		video_frame2 = video_frame;
+		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
+	}*/
+	/**********************************************************/
+
+
+
 	// ... until done
 	return 0;
 }

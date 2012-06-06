@@ -185,6 +185,9 @@ public:
 		if(passes == 0){return;}
 		//copy the input image so we don't accidently do something silly to it
 		img_dilate_ = img_src_->clone ();
+		//As the distance map contains the distance for each pixel to the closest black pixel, to dilate
+		//we will need to know the distance to the closest white pixel, easiest way is probably
+		//to invert the input image 
 		//create a distance map (calculates each pixels distance from the closest black pixel)
 		cv::distanceTransform(img_dilate_, distance_map_, CV_DIST_L2, 3);//CV_DIST_L2 and 3x3 apparently gives a fast, coarse estimate (should be good enough for what we need)
 		//do the dirty work, this is basically a threshold of the distance map with the results 
@@ -198,7 +201,7 @@ public:
 					{
 						//if the distance from the current pixel to the closest black (background)
 						//pixel is less or equal to the desired number of passes turn it black
-						img_dilate_(i,j) == 0;
+						img_dilate_(i,j) == 255;
 					}
 				}
 			}
@@ -734,6 +737,8 @@ public:
 		//cv::imshow ("largest regions", img_regions_);
 		// Needed to  keep the HighGUI window open
 		cv::waitKey (3);
+		
+		//publish X, Y, angle and est dist to ROS
 
 	}
 	
@@ -752,7 +757,7 @@ int main(int argc, char **argv)
 	Demo d(nh);
 	
 	//Read threshold values from file
-	INIReader reader("config.ini");
+	INIReader reader("../../Config/dwncam2_config.ini");
 	//check the file can be opened
     if (reader.ParseError() < 0) 
     {
