@@ -21,10 +21,10 @@
 
 struct termios orig_terimos;
 
-int RANGE = 5;
+int RANGE = 45;
 int LEFTANGLE = 0;
 int RIGHTANGLE = 6399;
-int SCANSTARE = 0x2B; //or 0x2B
+int SCANSTARE = 0x23; //or 0x2B
 
 int fd; 							/* File descriptor for the port */
 unsigned char returnBuffer[500]; 	/*Buffer which stores read data*/
@@ -40,7 +40,9 @@ unsigned char 	header,		//Message Header.
 				term;		//Message Terminator
 
 unsigned int	bins,
-				bearing;		
+		bearing,
+		bearingOld,
+		bearingFail;		
 
 unsigned int bp1_temp[263],	//Clone dataset, for bad packet recovery
 			bp1_buffLen,
@@ -177,10 +179,10 @@ int main( int argc, char **argv )
 			if(switchFlag == 0)
 			{
 				
-				//SCANSTARE = 0x23;
-				//RANGE = 75;
-				//LEFTANGLE = 4800;
-				//RIGHTANGLE = LEFTANGLE -1;
+				SCANSTARE = 0xC0;
+				RANGE = 45;
+				LEFTANGLE = 0;
+				RIGHTANGLE = 6399;
 				
 				headSetup();
 				switchFlag = 1;
@@ -199,8 +201,25 @@ int main( int argc, char **argv )
 				//
 				//tcflush(fd, TCIFLUSH);//remove
 				//pass datas	
+				
+/*	Hack to fix the bearing mess up between ~3300-3600, dafuq. */
+
+				if( bearingOld > bearing)
+					bearingFail = 1;
+				else if( bearing > 3500 || (bearing >= 0 || bearing <= 100))
+					bearingFail = 0;
+				if(bearingFail == 1)
+				{
+				bearing = bearing + 1000;
+				}
+					
+			
 				sonarBearing.data = (float) bearing;
 				sonarBins.data = (float) bins;
+				
+				printf("bearing = %d\n", bearing);
+
+
 				
 				sonarBinsArr.data.clear();
 				for (int k = 0; k < 90; k++)
@@ -215,13 +234,19 @@ int main( int argc, char **argv )
 				sonarBearingMsg.publish(sonarBearing);
 				sonarBinsMsg.publish(sonarBins);
 				sonarBinsArrMsg.publish(sonarBinsArr);
-				
+			
 				sonarScanMsg.publish(sonarScan);
 
 				//ROS_INFO("Bearing: %f, Bins: %f", bearing, bins);
 				//printf("%d - %d\n", bearing, bins);
 				//ros::spinOnce();
-				i++;
+				i++;	
+				bearingOld = bearing;
+
+
+					
+				
+				
 
 //			}			
 			
@@ -687,7 +712,7 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 					0x80,
 					0x02,
 					0x1D,						//Head Command Type - 1 = Normal, 29 Dual Channel
-					0xC5, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
+					0x87, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
 					0x03,						//Head Type
 					0x99, 0x99, 0x99, 0x02,		//TxN Channel 1
 					0x66, 0x66, 0x66, 0x05,		//TxN Channel 2
@@ -979,7 +1004,7 @@ int requestData( void )
 void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 {
 	switchCmd = sonarCmd->data;
-	switchFlag = 0;
+	switchFlag = 1;
 	return;
 }
 
@@ -989,7 +1014,8 @@ void cmdCallback(const std_msgs::Int32::ConstPtr& sonarCmd)
 
 void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange)
 {
-	RANGE = sonarRange->data;
+	//RANGE = sonarRange->data;
+	RANGE = 45;
 	return;
 }
 
@@ -999,8 +1025,9 @@ void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange)
 
 void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 {
-	LEFTANGLE = sonarLeft->data;
-	RIGHTANGLE = sonarLeft->data + (1600);
+	//LEFTANGLE = sonarLeft->data;
+	//RIGHTANGLE = sonarLeft->data + (1600);
+	
 	return;
 }
 /*! \fn createLaserData
@@ -1036,7 +1063,7 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 	double sonar_frequency = 2000; //same as usleep???
 	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
-	sonarScan.header.frame_id = "/sonar2"; 
+	sonarScan.header.frame_id = "/sonar"; 
 
 	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
 	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
@@ -1044,7 +1071,7 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 
 	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
-	sonarScan.range_min = 0.833333333;
-	sonarScan.range_max = 75;
+	sonarScan.range_min = 0;
+	sonarScan.range_max = RANGE;
 
 }

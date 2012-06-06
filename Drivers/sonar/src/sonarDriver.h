@@ -8,13 +8,13 @@
 #define	ADLOW			8
 #define	GAIN			84
 #define	ADINTERVAL		104
-#define MIN_AD_INTERVAL 5
+#define MIN_AD_INTERVAL 	5
 
 #define	NUMBEROFBINS		90//200
-#define STEPANGLE		32
+#define STEPANGLE		16
 #define MOTIME			25
 
-#define WRITEDEL		250000//
+#define WRITEDEL		110000 //250000//
 
 #define THRESHOLD 		207
 

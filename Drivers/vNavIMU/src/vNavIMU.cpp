@@ -19,7 +19,7 @@ using namespace std;
 //
 //For ease of integration this node publishes to the same topics as the old compass driver
 //
-const char* const COM_PORT = "//dev//ttyS0";
+const char* const COM_PORT = "//dev//ttyUSB0";
 const int BAUD_RATE = 115200;
 float heading, pitch, roll;		/*Floats for the returned values*/
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle imu; //create a handle for the node - this does the init and cleans up the node on destruction
 
 	//tf setup
-	tf::TransformBroadcaster broadcaster;
+	//tf::TransformBroadcaster broadcaster;
 
 	/*Advertises our various messages - these are purely for backwards compatibility with control*/
 	ros::Publisher compassHeadingMsg = imu.advertise<std_msgs::Float32>("compassHeading", 100);
