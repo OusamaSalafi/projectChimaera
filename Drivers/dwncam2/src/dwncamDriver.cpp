@@ -50,8 +50,9 @@ protected:
 	
 	int regions_allocated_, pixelcount_, region_count_, largest_regions_count_, pixels_passed_, is_pipe_, i_, j_, k_, l_, m_, n_, n2_;
 	int *regions_, *region_lengths_, *largest_regions_;
-	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_, sy2_, sxx2_, sxy2_, alpha2_, beta2_;
+	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_, sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
 	CvPoint point1_, point2_;
+	char angle_text_[50];
 
 
 public:
@@ -541,7 +542,7 @@ public:
 	//	cv::medianBlur(img_bin_, img_bin_, 9);
 		erode_image(&img_bin_, &img_bin_, erode_passes);
 		dilate_image(&img_bin_, &img_bin_, dilate_passes);
-		findCentre();
+		//findCentre();
 
 
 
@@ -559,10 +560,10 @@ public:
 		}
 
 		// Get White Regions
-		region_count_ = findRegions(&img_bin_, regions_, region_lengths_, 255);
+		//region_count_ = findRegions(&img_bin_, regions_, region_lengths_, 255);
 
 		// Get Largest White Regions
-		img_regions_ = cv::Mat::zeros(img_bin_.rows, img_bin_.cols, CV_8U);
+		/*img_regions_ = cv::Mat::zeros(img_bin_.rows, img_bin_.cols, CV_8U);
 		if (region_count_ > 0){
 			k_ = 0;
 			m_ = 0;
@@ -593,7 +594,7 @@ public:
 					pixels_passed_ += img_bin_.cols;
 				}
 			}
-		}
+		}*/
 		
 		// Fill In Enclosed Areas On Largest White Regions
 /*		region_count_ = findRegions(&img_regions_, regions_, region_lengths_, 0);
@@ -652,9 +653,9 @@ public:
 	*/	
 		// Check If The Total Area Is Large Enough To Be Considered A Pipe
 		is_pipe_ = 0;
-		for (i_ = 0; i_ < img_regions_.rows; i_++){
-			for (j_ = 0; j_ < img_regions_.cols; j_++){
-				if (img_regions_.at<uchar>(i_, j_) == 255){
+		for (i_ = 0; i_ < img_bin_.rows; i_++){
+			for (j_ = 0; j_ < img_bin_.cols; j_++){
+				if (img_bin_.at<uchar>(i_, j_) == 255){
 					is_pipe_ += 1;
 					if (is_pipe_ >= 5000){
 						break;
@@ -664,17 +665,16 @@ public:
 			if (is_pipe_ >= 5000){
 				break;
 			}
-			pixels_passed_ += img_regions_.cols;
+			pixels_passed_ += img_bin_.cols;
 		}
 		if (is_pipe_ >= 5000){
 			is_pipe_ = 1;
 		} else{
 			is_pipe_ = 0;
 		}
-		
-		// Remove "Cut-Out" Areas
 
-		// Determine The Angle
+
+		// Get The Bounding Lines, The Central Line & The Angle
 		if (is_pipe_ == 1){
 			n_ = 0;
 			sx_ = 0.0;
@@ -686,9 +686,9 @@ public:
 			sy2_ = 0.0;
 			sxx2_ = 0.0;
 			sxy2_ = 0.0;
-			for (i_ = 0; i_ < img_regions_.rows; i_++){
-				for (j_ = 0; j_ < img_regions_.cols; j_++){
-					if (img_regions_.at<uchar>(i_, j_) == 255){
+			for (i_ = 0; i_ < img_bin_.rows; i_++){
+				for (j_ = 0; j_ < img_bin_.cols; j_++){
+					if (img_bin_.at<uchar>(i_, j_) == 255){
 						n_ += 1;
 						sx_ += (double)(j_);
 						sy_ += (double)(i_);
@@ -697,8 +697,8 @@ public:
 						break;
 					}
 				}
-				for (j_ = img_regions_.cols - 1; j_ >= 0; j_--){
-					if (img_regions_.at<uchar>(i_, j_) == 255){
+				for (j_ = img_bin_.cols - 1; j_ >= 0; j_--){
+					if (img_bin_.at<uchar>(i_, j_) == 255){
 						n2_ += 1;
 						sx2_ += (double)(j_);
 						sy2_ += (double)(i_);
@@ -708,18 +708,72 @@ public:
 					}
 				}
 			}
+			
+			// Get The Left Line
 			beta_ = (double)(((double)(n_ * sxy_) - (double)(sx_ * sy_)) / ((double)(n_ * sxx_) - (double)(pow(sx_, 2))));
 			alpha_ = (double)((double)(sy_ / (double)(n_)) - (double)(beta_ * sx_ / (double)(n_)));
+			point1_ = {(-alpha_ / beta_), 0};
+			point2_ = {((double)(img_bin_.rows - 1.0 - alpha_) / beta_), img_bin_.rows - 1};
+			line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			
+			// Get The Right Line
 			beta2_ = (double)(((double)(n2_ * sxy2_) - (double)(sx2_ * sy2_)) / ((double)(n2_ * sxx2_) - (double)(pow(sx2_, 2))));
 			alpha2_ = (double)((double)(sy2_ / (double)(n2_)) - (double)(beta2_ * sx2_ / (double)(n2_)));
-			point1_ = {(-alpha_ / beta_), 0};
-			point2_ = {((double)(img_regions_.rows - 1.0 - alpha_) / beta_), img_regions_.rows - 1};
-			line(img_regions_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
-			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
 			point1_ = {(-alpha2_ / beta2_), 0};
-			point2_ = {((double)(img_regions_.rows - 1.0 - alpha2_) / beta2_), img_regions_.rows - 1};
-			line(img_regions_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			point2_ = {((double)(img_bin_.rows - 1.0 - alpha2_) / beta2_), img_bin_.rows - 1};
+			line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
 			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			
+			// Get The Central Line
+			a1_ = (double)(atan(fabs(beta_)));
+			a2_ = (double)(atan(fabs(beta2_)));
+			if (a1_ < 0.0){
+				a1_ += 3.1416;
+			}
+			if (a2_ < 0.0){
+				a2_ += 3.1416;
+			}
+			if (beta_ >= 0.0 && beta2_ >= 0.0){
+				a3_ = (double)((double)(a1_ + a2_) / 2.0);
+				beta3_ = tan(a3_);
+			} else if (beta_ < 0.0 && beta2_ < 0.0){
+				a3_ = (double)((double)(a1_ + a2_) / 2.0);
+				beta3_ = -tan(a3_);
+			} else{
+				a3_ = a1_ + (double)((double)(3.1416 - a1_ - a2_) / 2.0);
+				if (a3_ < 1.57){
+					beta3_ = -tan(a3_);
+				} else{
+					a3_ = 3.1416 - a3_;
+					beta3_ = tan(a3_);
+				}
+			}
+			if (beta_ == beta2_){
+				point1_.x = 0;
+				point1_.y = (double)((double)(alpha_ + alpha2_) / 2.0);
+			} else{
+				point1_.x = (double)((double)(alpha2_ - alpha_) / (double)(beta_ - beta2_));
+				point1_.y = (double)(alpha_ + (double)(beta_ * point1_.x));
+			}
+			alpha3_ = (double)(point1_.y) - (double)(beta3_ * point1_.x);
+			point1_ = {(-alpha3_ / beta3_), 0};
+			point2_ = {((double)(img_bin_.rows - 1.0 - alpha3_) / beta3_), img_bin_.rows - 1};
+			line(img_in_, point1_, point2_, cvScalar(255, 0, 0, 0), 1, 8, 0);
+			
+			// Get The Angle
+			a1_ = (double)((double)(atan(fabs(beta3_))) * 57.3);
+			if (a1_ < 0.0){
+				a1_ += 180.0;
+			}
+			if (beta3_ >= 0.0){
+				a1_ -= 90.0;
+			} else{
+				a1_ = 90.0 - a1_;
+			}
+			//printf("Pipe Angle Detected: %.2f\n", a1_);
+			sprintf(angle_text_, "Pipe Angle Detected: %.2f", a1_);
+			putText(img_in_, angle_text_, cvPoint(50, 75), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0, 0, 0), 1, CV_AA);
 		}
 
 
