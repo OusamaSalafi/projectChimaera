@@ -42,7 +42,8 @@ unsigned char 	header,		//Message Header.
 unsigned int	bins,
 		bearing,
 		bearingOld,
-		bearingFail;		
+		bearingFail,
+		sonarDirection = 1;		
 
 unsigned int bp1_temp[263],	//Clone dataset, for bad packet recovery
 			bp1_buffLen,
@@ -126,8 +127,8 @@ int main( int argc, char **argv )
 			{
 				//SCANSTARE = 0x2B;
 				//RANGE = 5;
-				//LEFTANGLE = 3200;
-				//RIGHTANGLE = 3300;
+				LEFTANGLE = 3300;
+				RIGHTANGLE = 3600;
 				
 				headSetup();
 				switchFlag = 1;
@@ -202,24 +203,53 @@ int main( int argc, char **argv )
 				//tcflush(fd, TCIFLUSH);//remove
 				//pass datas	
 				
-/*	Hack to fix the bearing mess up between ~3300-3600, dafuq. 
+/*	Hack to fix the bearing mess up between ~3327-3599, dafuq. */
 
-				if( bearingOld > bearing)
-					bearingFail = 1;
-				else if( bearing > 3500 || (bearing >= 0 || bearing <= 100))
-					bearingFail = 0;
+				//printf("%d - ", bearing);
+
+				if(sonarDirection == UP)
+				{
+
+					if( bearingOld != bearing - (STEPANGLE * 2) && bearingOld != 0)
+					{
+						if((bearing >= 0 && bearing <= 100) && (bearingOld <= 6399 && bearingOld >= 6300))  
+							bearingFail = 0;
+						else
+							bearingFail = 1;
+					}
+					if( (bearing > bearingOld + 700)  && bearingFail == 1)
+						bearingFail = 0;
+	
+				}
+				else
+				{
+
+					if( bearingOld != bearing + (STEPANGLE * 2) && bearingOld != 0)
+					{
+						if((bearingOld >= 0 && bearingOld <= 100) && (bearing <= 6399 && bearing >= 6300))  
+							bearingFail = 0;
+						else
+							bearingFail = 1;
+					}
+					if( (bearing > bearingOld + 700)  && bearingFail == 1)
+						bearingFail = 0;
+	
+				}				
 				if(bearingFail == 1)
 				{
-				bearing = bearing + 1000;
+					//bearing = bearing + 768;
+					sonarBearing.data = (float) bearing + 768;
 				}
-					
-*/			
-				sonarBearing.data = (float) bearing;
+				else
+				{
+				 	sonarBearing.data = (float) bearing;
+				}
+				//printf("%d -- %d\n", bearing, bearingFail);
+
+/* end fix */				
+
+				//sonarBearing.data = (float) bearing;
 				sonarBins.data = (float) bins;
-				
-				printf("bearing = %d\n", bearing);
-
-
 				
 				sonarBinsArr.data.clear();
 				for (int k = 0; k < 90; k++)
@@ -253,6 +283,7 @@ int main( int argc, char **argv )
 		}
 		
 		ros::spinOnce();
+		//sleep(1);
 		
 	}
 
@@ -534,10 +565,10 @@ int sortPacket(void)
 		if(msg[0] == mtHeadData)
 		{
 
-			if(byteCount == 0)
-				printf("Single Packet\n");
-			else
-				printf("Multi Packet\n");
+//			if(byteCount == 0)
+//				printf("Single Packet\n");
+//			else
+//				printf("Multi Packet\n");
 			binFlag = 0;
 			//printf("\nBearing: %f\n Bins: ", (float) getU16(temp[41], temp[40]) / 17.775 );
 			for(i = 44; i < buffLen-1; i++ )
@@ -712,7 +743,7 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 					0x80,
 					0x02,
 					0x1D,						//Head Command Type - 1 = Normal, 29 Dual Channel
-					0x87, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
+					0x83, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
 					0x03,						//Head Type
 					0x99, 0x99, 0x99, 0x02,		//TxN Channel 1
 					0x66, 0x66, 0x66, 0x05,		//TxN Channel 2
@@ -950,7 +981,7 @@ int requestData( void )
 		//	tcflush(fd, TCIFLUSH);//remove
 		//	usleep(50);//remove
 			makePacket(mtSendData);
-			ROS_INFO("requestData \t>> mtSendData\n");
+//			ROS_INFO("requestData \t>> mtSendData\n");
 			//tcflush(fd, TCIFLUSH);//remove
 			//usleep(50);//remove
 			sendFlag = 1;
@@ -963,7 +994,7 @@ int requestData( void )
 			//if you get some data back go forth
 			if(returnMsg() == mtHeadData)
 			{
-				ROS_INFO("requestData \t<< mtHeadData!!\n");
+//				ROS_INFO("requestData \t<< mtHeadData!!\n");
 				headPack = 1;
 				return 0;
 

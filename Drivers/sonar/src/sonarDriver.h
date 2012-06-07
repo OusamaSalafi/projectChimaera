@@ -5,8 +5,8 @@
 //#define 	SCANSTARE 0x23
 
 #define	ADSPAN			81
-#define	ADLOW			8
-#define	GAIN			84
+#define	ADLOW			40
+#define	GAIN			54
 #define	ADINTERVAL		104
 #define MIN_AD_INTERVAL 	5
 
@@ -47,6 +47,8 @@
 #define mtSendData				25
 #define mtSendPerformanceData	26
 #define mtStopAlive				66
+
+#define UP 	1
 
 /* Function Declerations */
 
