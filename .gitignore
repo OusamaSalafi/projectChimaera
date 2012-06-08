@@ -6,6 +6,7 @@ bin
 .cproject
 .project
 .pydevproject
+*.so
 cmake_install.cmake
 
 #This shouldnt be here, you need it to compile!
