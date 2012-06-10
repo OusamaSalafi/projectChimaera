@@ -34,11 +34,13 @@ protected:
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
 	cv::Mat img_split[2];
-	int min_hue_, max_hue_, min_sat_, dilate_passes_, min_area_,
+	int min_hue_, max_hue_, min_sat_, dilate_passes_, min_area_percentage_, edges_allocated_,
+	edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
 	moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_;
+	int *edges1_, *edges2_, *blanket1_, *blanket2_;
 	float erode_passes_;
-	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_, sy2_, sxx2_, sxy2_,
-	alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
+	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_,
+	sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
 	double *moving_alpha1_, *moving_beta1_, *moving_alpha2_, *moving_beta2_;
 	CvPoint pipe_centre_, point1_, point2_;
 	char angle_text_[50];
@@ -51,7 +53,7 @@ public:
 
 		// Listen For Image Messages On A Topic And Setup Callback
 		ROS_INFO("Getting Cam");
-		image_sub_ = it_.subscribe ("/gscam/image_raw", 1, &Downcam::imageCallback, this);
+		image_sub_ = it_.subscribe("/gscam/image_raw", 1, &Downcam::imageCallback, this);
 		ROS_INFO("Got Cam");
 
 		// Open HighGUI Windows
@@ -71,7 +73,7 @@ public:
 			min_sat_ = 50;
 			erode_passes_ = 10;
 			dilate_passes_ = 10;
-			min_area_ = 5000;
+			min_area_percentage_ = 20;
 			moving_average_size_ = 10;
 		} else{
 			// Read The Values In With Defaults Set To The Best Values Found For The Test Video
@@ -85,8 +87,8 @@ public:
 			std::cout << "erode_passes = " << erode_passes_ << "\n";
 			dilate_passes_ = reader.GetInteger("dilate", "dilate_passes", 10);
 			std::cout << "dilation_passes = " << dilate_passes_ << "\n";
-			min_area_ = reader.GetInteger("pipe", "min_area", 5000);
-			std::cout << "min_area = " << min_area_ << "\n";
+			min_area_percentage_ = reader.GetInteger("pipe", "min_area_percentage", 20);
+			std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
 			moving_average_size_ = reader.GetInteger("angle", "moving_average_size", 10);
 			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
 		}
@@ -95,6 +97,9 @@ public:
 		if (moving_average_size_ < 1){
 			moving_average_size_ = 1;
 		}
+		
+		// Set The Initial Value For Dynamically Allocating The Edge Arrays
+		edges_allocated_ = 0;
 
 		// Allocate Memory For The Moving Average Arrays
 		moving_alpha1_ = (double*)(malloc(moving_average_size_ * sizeof(double)));
@@ -124,7 +129,7 @@ public:
 				}
 			}
 		}
-		if (area < min_area){
+		if (area < min_area || area == 0){
 			output.x = -1;
 			output.y = -1;
 		} else{
@@ -132,6 +137,105 @@ public:
 			output.y = (int)(mx / area);
 		}
 		return output;
+	}
+
+
+
+	// Blanket Function
+	void blanket(int *input, int *output, int index, int length, int side)
+	{
+		int i, j, k, bestbefore, bestafter, pixel;
+		double currentslope;
+		for (i = index; i < index + length; i++){
+			output[i] = -1;
+			if (input[i] != -1){
+				bestbefore = i;
+				bestafter = i;
+				k = 0;
+				for (j = 0; j < 20; j++){
+					pixel = i;
+					currentslope = 0.0;
+					if (bestafter > bestbefore){
+						currentslope = (double)((double)(input[bestafter] - input[bestbefore]) / (double)(bestafter - bestbefore));
+					}
+					if (k == 0){
+						pixel = i - (int)(j / 2) - 1;
+						if (pixel >= index){
+							if (input[pixel] != -1){
+								if (side == 0){
+									if ((double)((double)(input[bestafter] - input[pixel]) / (double)(bestafter - pixel)) > currentslope){
+										bestbefore = pixel;
+									}
+								} else{
+									if ((double)((double)(input[bestafter] - input[pixel]) / (double)(bestafter - pixel)) < currentslope){
+										bestbefore = pixel;
+									}
+								}
+							}
+						}
+					} else{
+						pixel = i + (int)((j + 1) / 2);
+						if (pixel < index + length){
+							if (input[pixel] != -1){
+								if (side == 0){
+									if ((double)((double)(input[pixel] - input[bestbefore]) / (double)(pixel - bestbefore)) < currentslope){
+										bestafter = pixel;
+									}
+								} else{
+									if ((double)((double)(input[pixel] - input[bestbefore]) / (double)(pixel - bestbefore)) > currentslope){
+										bestafter = pixel;
+									}
+								}
+							}
+						}
+					}
+					k = 1 - k;
+				}
+				if (input[bestbefore] != input[bestafter]){
+					output[i] = input[bestbefore] + (int)((double)((double)(i - bestbefore) * (double)(input[bestafter] - input[bestbefore]) / (double)(bestafter - bestbefore)));
+				} else{
+					output[i] = input[bestbefore];
+				}
+			}
+		}
+		for (i = index; i < index + length; i++){
+			if (output[i] == -1){
+				bestbefore = -1;
+				bestafter = -1;
+				for (j = i - 1; j >= index; j--){
+					if (output[j] != -1){
+						bestbefore = j;
+						break;
+					}
+				}
+				for (j = i + 1; j < index + length; j++){
+					if (output[j] != -1){
+						bestafter = j;
+						break;
+					}
+				}
+				if (bestbefore == -1 && bestafter == -1){
+					output[i] = 0;
+				} else if (bestbefore == -1){
+					output[i] = output[bestafter];
+				} else if (bestafter == -1){
+					output[i] = output[bestbefore];
+				} else{
+					output[i] = output[bestbefore] + (int)((double)((double)(i - bestbefore) * (double)(output[bestafter] - output[bestbefore]) / (double)(bestafter - bestbefore)));
+				}
+			}
+		}
+		for (i = index; i < index + length; i++){
+			pixel = 0;
+			bestbefore = 0;
+			for (j = i - 5; j <= i + 5; j++){
+				if (j >= index && j < index + length){
+					pixel += output[j];
+					bestbefore += 1;
+				}
+			}
+			output[i] = (int)(pixel / bestbefore);
+		}
 	}
 
 
@@ -285,162 +389,257 @@ public:
 		}
 
 		// Find The Centre Of The Pipe
-		pipe_centre_ = find_centre(&img_bin_, min_area_);
+		pipe_centre_ = find_centre(&img_bin_, (int)((double)((double)(img_bin_.rows) *
+		(double)(img_bin_.cols) * (double)(min_area_percentage_) / 100.0)));
 
 		// If We Have Found A Pipe
 		if (pipe_centre_.x >= 0){
 
-			// Calculate The Variables Required For Simple Linear Regression On Each Side Of The Pipe
-			n_ = 0;
-			sx_ = 0.0;
-			sy_ = 0.0;
-			sxx_ = 0.0;
-			sxy_ = 0.0;
-			n2_ = 0;
-			sx2_ = 0.0;
-			sy2_ = 0.0;
-			sxx2_ = 0.0;
-			sxy2_ = 0.0;
+			// Dynamically Allocate Memory For The Edge Arrays if Required
+			if (edges_allocated_ != img_bin_.rows){
+				edges1_ = (int*)(malloc(img_bin_.rows * sizeof(int)));
+				edges2_ = (int*)(malloc(img_bin_.rows * sizeof(int)));
+				blanket1_ = (int*)(malloc(img_bin_.rows * sizeof(int)));
+				blanket2_ = (int*)(malloc(img_bin_.rows * sizeof(int)));
+				edges_allocated_ = img_bin_.rows;
+			}
+
+			// Get The Edges
+			edges1_index_ = -1;
+			edges1_length_ = -1;
+			edges1_marker_ = -1;
+			edges2_index_ = -1;
+			edges2_length_ = -1;
+			edges2_marker_ = -1;
 			for (i_ = 0; i_ < img_bin_.rows; i_++){
+				edges1_[i_] = -1;
 				for (j_ = 0; j_ < img_bin_.cols; j_++){
 					if (img_bin_.at<uchar>(i_, j_) == 255){
-						n_ += 1;
-						sx_ += (double)(j_);
-						sy_ += (double)(i_);
-						sxx_ += (double)(pow(j_, 2.0));
-						sxy_ += (double)(i_ * j_);
+						edges1_[i_] = j_;
+						if (edges1_marker_ == -1){
+							edges1_marker_ = i_;
+						}
 						break;
 					}
 				}
+				if (edges1_[i_] == -1 || i_ == img_bin_.rows - 1){
+					if (edges1_marker_ != -1){
+						if (edges1_[i_] == -1){
+							if (i_ - edges1_marker_ > edges1_length_){
+								edges1_index_ = edges1_marker_;
+								edges1_length_ = i_ - edges1_marker_;
+							}
+						} else{
+							if (i_ + 1 - edges1_marker_ > edges1_length_){
+								edges1_index_ = edges1_marker_;
+								edges1_length_ = i_ + 1 - edges1_marker_;
+							}
+						}
+						edges1_marker_ = -1;
+					}
+				}
+				edges2_[i_] = -1;
 				for (j_ = img_bin_.cols - 1; j_ >= 0; j_--){
 					if (img_bin_.at<uchar>(i_, j_) == 255){
-						n2_ += 1;
-						sx2_ += (double)(j_);
-						sy2_ += (double)(i_);
-						sxx2_ += (double)(pow(j_, 2.0));
-						sxy2_ += (double)(i_ * j_);
+						edges2_[i_] = j_;
+						if (edges2_marker_ == -1){
+							edges2_marker_ = i_;
+						}
 						break;
+					}
+				}
+				if (edges2_[i_] == -1 || i_ == img_bin_.rows - 1){
+					if (edges2_marker_ != -1){
+						if (edges2_[i_] == -1){
+							if (i_ - edges2_marker_ > edges2_length_){
+								edges2_index_ = edges2_marker_;
+								edges2_length_ = i_ - edges2_marker_;
+							}
+						} else{
+							if (i_ + 1 - edges2_marker_ > edges2_length_){
+								edges2_index_ = edges2_marker_;
+								edges2_length_ = i_ + 1 - edges2_marker_;
+							}
+						}
+						edges2_marker_ = -1;
 					}
 				}
 			}
 
-			// Get The Left Line
-			beta_ = (double)(((double)(n_ * sxy_) - (double)(sx_ * sy_)) / ((double)(n_ * sxx_) - (double)(pow(sx_, 2))));
-			alpha_ = (double)((double)(sy_ / (double)(n_)) - (double)(beta_ * sx_ / (double)(n_)));
-			moving_alpha1_[moving_index_] = alpha_;
-			moving_beta1_[moving_index_] = beta_;
+			// If We Have Edges
+			if (edges1_index_ >= 0 && edges2_index_ >= 0){
 
-			// Get The Right Line
-			beta2_ = (double)(((double)(n2_ * sxy2_) - (double)(sx2_ * sy2_)) / ((double)(n2_ * sxx2_) - (double)(pow(sx2_, 2))));
-			alpha2_ = (double)((double)(sy2_ / (double)(n2_)) - (double)(beta2_ * sx2_ / (double)(n2_)));
-			moving_alpha2_[moving_index_] = alpha2_;
-			moving_beta2_[moving_index_] = beta2_;
+				// Blanket The Left & Right Edges
+				blanket(edges1_, blanket1_, edges1_index_, edges1_length_, 0);
+				blanket(edges2_, blanket2_, edges2_index_, edges2_length_, 1);
+				
+				// TEMPORARY SECTION ########### FOR DEBUGGING
+				img_thresh_ = cv::Mat::zeros(img_thresh_.rows, img_thresh_.cols, CV_8UC3);
+				for (i_ = 0; i_ < edges1_length_; i_++){
+					img_thresh_.at<uchar>(edges1_index_ + i_, 3 * edges1_[edges1_index_ + i_]) = 255;
+				}
+				for (i_ = 0; i_ < edges2_length_; i_++){
+					img_thresh_.at<uchar>(edges2_index_ + i_, (3 * edges2_[edges2_index_ + i_]) + 1) = 255;
+				}
+				for (i_ = 0; i_ < edges1_length_; i_++){
+					img_thresh_.at<uchar>(edges1_index_ + i_, (3 * blanket1_[edges1_index_ + i_]) + 2) = 255;
+				}
+				for (i_ = 0; i_ < edges2_length_; i_++){
+					img_thresh_.at<uchar>(edges2_index_ + i_, (3 * blanket2_[edges2_index_ + i_]) + 1) = 255;
+					img_thresh_.at<uchar>(edges2_index_ + i_, (3 * blanket2_[edges2_index_ + i_]) + 2) = 255;
+				}
 
-			// Update The Moving Average Index & Length
-			moving_index_ += 1;
-			if (moving_index_ > moving_length_){
-				moving_length_ = moving_index_;
-			}
-			if (moving_index_ >= moving_average_size_){
-				moving_index_ = 0;
-			}
+				// Calculate The Variables Required For Simple Linear Regression On Each Side Of The Pipe
+				n_ = edges1_length_;
+				sx_ = 0.0;
+				sy_ = 0.0;
+				sxx_ = 0.0;
+				sxy_ = 0.0;
+				for (i_ = 0; i_ < edges1_length_; i_++){
+					/*sx_ += (double)(edges1_[edges1_index_ + i_]);
+					sy_ += (double)(edges1_index_ + i_);
+					sxx_ += (double)(pow(edges1_[edges1_index_ + i_], 2.0));
+					sxy_ += (double)((double)(edges1_index_ + i_) * (double)(edges1_[edges1_index_ + i_]));*/
+					sx_ += (double)(blanket1_[edges1_index_ + i_]);
+					sy_ += (double)(edges1_index_ + i_);
+					sxx_ += (double)(pow(blanket1_[edges1_index_ + i_], 2.0));
+					sxy_ += (double)((double)(edges1_index_ + i_) * (double)(blanket1_[edges1_index_ + i_]));
+				}
+				n2_ = edges2_length_;
+				sx2_ = 0.0;
+				sy2_ = 0.0;
+				sxx2_ = 0.0;
+				sxy2_ = 0.0;
+				for (i_ = 0; i_ < edges2_length_; i_++){
+					/*sx2_ += (double)(edges2_[edges2_index_ + i_]);
+					sy2_ += (double)(edges2_index_ + i_);
+					sxx2_ += (double)(pow(edges2_[edges2_index_ + i_], 2.0));
+					sxy2_ += (double)((double)(edges2_index_ + i_) * (double)(edges2_[edges2_index_ + i_]));*/
+					sx2_ += (double)(blanket2_[edges2_index_ + i_]);
+					sy2_ += (double)(edges2_index_ + i_);
+					sxx2_ += (double)(pow(blanket2_[edges2_index_ + i_], 2.0));
+					sxy2_ += (double)((double)(edges2_index_ + i_) * (double)(blanket2_[edges2_index_ + i_]));
+				}
 
-			// Get The Moving Average Lines
-			alpha_ = 0.0;
-			beta_ = 0.0;
-			alpha2_ = 0.0;
-			beta2_ = 0.0;
-			for (i_ = 0; i_ < moving_length_; i_++){
-				alpha_ += moving_alpha1_[i_];
-				beta_ += moving_beta1_[i_];
-				alpha2_ += moving_alpha2_[i_];
-				beta2_ += moving_beta2_[i_];
-			}
-			alpha_ /= moving_length_;
-			beta_ /= moving_length_;
-			alpha2_ /= moving_length_;
-			beta2_ /= moving_length_;
+				// Get The Left Line
+				beta_ = (double)(((double)(n_ * sxy_) - (double)(sx_ * sy_)) / ((double)(n_ * sxx_) - (double)(pow(sx_, 2))));
+				alpha_ = (double)((double)(sy_ / (double)(n_)) - (double)(beta_ * sx_ / (double)(n_)));
+				moving_alpha1_[moving_index_] = alpha_;
+				moving_beta1_[moving_index_] = beta_;
 
-			// Plot The Left Line
-			point1_.x = (int)(-alpha_ / beta_);
-			point1_.y = 0;
-			point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha_) / beta_);
-			point2_.y = img_bin_.rows - 1;
-			line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
-			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+				// Get The Right Line
+				beta2_ = (double)(((double)(n2_ * sxy2_) - (double)(sx2_ * sy2_)) / ((double)(n2_ * sxx2_) - (double)(pow(sx2_, 2))));
+				alpha2_ = (double)((double)(sy2_ / (double)(n2_)) - (double)(beta2_ * sx2_ / (double)(n2_)));
+				moving_alpha2_[moving_index_] = alpha2_;
+				moving_beta2_[moving_index_] = beta2_;
 
-			// Plot The Right Line
-			point1_.x = (int)(-alpha2_ / beta2_);
-			point1_.y = 0;
-			point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha2_) / beta2_);
-			point2_.y = img_bin_.rows - 1;
-			line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
-			line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+				// Update The Moving Average Index & Length
+				moving_index_ += 1;
+				if (moving_index_ > moving_length_){
+					moving_length_ = moving_index_;
+				}
+				if (moving_index_ >= moving_average_size_){
+					moving_index_ = 0;
+				}
 
-			// Get The Central Line
-			a1_ = (double)(atan(fabs(beta_)));
-			a2_ = (double)(atan(fabs(beta2_)));
-			if (a1_ < 0.0){
-				a1_ += 3.1416;
-			}
-			if (a2_ < 0.0){
-				a2_ += 3.1416;
-			}
-			if (beta_ >= 0.0 && beta2_ >= 0.0){
-				a3_ = (double)((double)(a1_ + a2_) / 2.0);
-				beta3_ = tan(a3_);
-			} else if (beta_ < 0.0 && beta2_ < 0.0){
-				a3_ = (double)((double)(a1_ + a2_) / 2.0);
-				beta3_ = -tan(a3_);
-			} else{
-				a3_ = a1_ + (double)((double)(3.1416 - a1_ - a2_) / 2.0);
-				if (a3_ < 1.57){
+				// Get The Moving Average Lines
+				alpha_ = 0.0;
+				beta_ = 0.0;
+				alpha2_ = 0.0;
+				beta2_ = 0.0;
+				for (i_ = 0; i_ < moving_length_; i_++){
+					alpha_ += moving_alpha1_[i_];
+					beta_ += moving_beta1_[i_];
+					alpha2_ += moving_alpha2_[i_];
+					beta2_ += moving_beta2_[i_];
+				}
+				alpha_ /= moving_length_;
+				beta_ /= moving_length_;
+				alpha2_ /= moving_length_;
+				beta2_ /= moving_length_;
+
+				// Plot The Left Line
+				point1_.x = (int)(-alpha_ / beta_);
+				point1_.y = 0;
+				point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha_) / beta_);
+				point2_.y = img_bin_.rows - 1;
+				line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+				line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+
+				// Plot The Right Line
+				point1_.x = (int)(-alpha2_ / beta2_);
+				point1_.y = 0;
+				point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha2_) / beta2_);
+				point2_.y = img_bin_.rows - 1;
+				line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+				line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
+
+				// Get The Central Line
+				a1_ = (double)(atan(fabs(beta_)));
+				a2_ = (double)(atan(fabs(beta2_)));
+				if (a1_ < 0.0){
+					a1_ += CV_PI;
+				}
+				if (a2_ < 0.0){
+					a2_ += CV_PI;
+				}
+				if (beta_ >= 0.0 && beta2_ >= 0.0){
+					a3_ = (double)((double)(a1_ + a2_) / 2.0);
+					beta3_ = tan(a3_);
+				} else if (beta_ < 0.0 && beta2_ < 0.0){
+					a3_ = (double)((double)(a1_ + a2_) / 2.0);
 					beta3_ = -tan(a3_);
 				} else{
-					a3_ = 3.1416 - a3_;
-					beta3_ = tan(a3_);
+					a3_ = a1_ + (double)((double)(CV_PI - a1_ - a2_) / 2.0);
+					if (a3_ < (double)(CV_PI / 2.0)){
+						beta3_ = -tan(a3_);
+					} else{
+						a3_ = CV_PI - a3_;
+						beta3_ = tan(a3_);
+					}
 				}
-			}
-			if (beta_ == beta2_){
-				point1_.x = 0;
-				point1_.y = (double)((double)(alpha_ + alpha2_) / 2.0);
-			} else{
-				point1_.x = (double)((double)(alpha2_ - alpha_) / (double)(beta_ - beta2_));
-				point1_.y = (double)(alpha_ + (double)(beta_ * point1_.x));
-			}
-			alpha3_ = (double)(point1_.y) - (double)(beta3_ * point1_.x);
-			point1_.x = (int)(-alpha3_ / beta3_);
-			point1_.y = 0;
-			point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha3_) / beta3_);
-			point2_.y = img_bin_.rows - 1;
-			line(img_in_, point1_, point2_, cvScalar(255, 0, 0, 0), 1, 8, 0);
+				if (beta_ == beta2_){
+					point1_.x = 0;
+					point1_.y = (double)((double)(alpha_ + alpha2_) / 2.0);
+				} else{
+					point1_.x = (double)((double)(alpha2_ - alpha_) / (double)(beta_ - beta2_));
+					point1_.y = (double)(alpha_ + (double)(beta_ * point1_.x));
+				}
+				alpha3_ = (double)(point1_.y) - (double)(beta3_ * point1_.x);
+				point1_.x = (int)(-alpha3_ / beta3_);
+				point1_.y = 0;
+				point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha3_) / beta3_);
+				point2_.y = img_bin_.rows - 1;
+				line(img_in_, point1_, point2_, cvScalar(255, 0, 0, 0), 1, 8, 0);
 
-			// Get The Angle
-			a1_ = (double)((double)(atan(fabs(beta3_))) * 57.3);
-			if (a1_ < 0.0){
-				a1_ += 180.0;
-			}
-			if (beta3_ >= 0.0){
-				a1_ -= 90.0;
-			} else{
-				a1_ = 90.0 - a1_;
-			}
-			sprintf(angle_text_, "Pipe Angle Detected: %.2f", a1_);
-			putText(img_in_, angle_text_, cvPoint(50, 75), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0, 0, 0), 1, CV_AA);
+				// Get The Angle
+				a1_ = (double)((double)(atan(fabs(beta3_))) * 180.0 / (double)(CV_PI));
+				if (a1_ < 0.0){
+					a1_ += 180.0;
+				}
+				if (beta3_ >= 0.0){
+					a1_ -= 90.0;
+				} else{
+					a1_ = 90.0 - a1_;
+				}
+				sprintf(angle_text_, "Pipe Angle Detected: %.2f", a1_);
+				putText(img_in_, angle_text_, cvPoint(50, 75), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0, 0, 0), 1, CV_AA);
 
-			// Display The Pipe Centre Point On The Input Image
-			point1_.x = pipe_centre_.x - 100;
-			point1_.y = pipe_centre_.y;
-			point2_.x = pipe_centre_.x + 100;
-			point2_.y = pipe_centre_.y;
-			line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
-			point1_.x = pipe_centre_.x;
-			point1_.y = pipe_centre_.y - 100;
-			point2_.x = pipe_centre_.x;
-			point2_.y = pipe_centre_.y + 100;
-			line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
+				// Display The Pipe Centre Point On The Input Image
+				point1_.x = pipe_centre_.x - 100;
+				point1_.y = pipe_centre_.y;
+				point2_.x = pipe_centre_.x + 100;
+				point2_.y = pipe_centre_.y;
+				line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
+				point1_.x = pipe_centre_.x;
+				point1_.y = pipe_centre_.y - 100;
+				point2_.x = pipe_centre_.x;
+				point2_.y = pipe_centre_.y + 100;
+				line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
 
-			// Publish The Centre X, Centre Y, Angle & Estimated Distance To ROS
+				// Publish The Centre X, Centre Y, Angle & Estimated Distance To ROS
+				
+			}
 
 		} else{
 
@@ -495,7 +694,7 @@ int main(int argc, char **argv)
 	IplImage video_frame2;
 	sensor_msgs::CvBridge bridge2_;
 	cv::VideoCapture cap("Test.avi");
-    	if(!cap.isOpened()){
+    if(!cap.isOpened()){
         	return -1;
 	}
 	while(ros::ok()){
