@@ -1,5 +1,5 @@
 // Downcam Driver
-// Authors: P-LAN, Wurbledood, alexsleat, everto151
+// Authors: P-LAN, Wurbledood, decoderdan, alexsleat, everto151
 
 //Includes
 #include <iostream>
@@ -15,14 +15,15 @@
 #include "sensor_msgs/Image.h"
 #include "std_msgs/Char.h"
 
+// Defines
+// Input Modes: 0 = GSCAM
+//              1 = VIDEO
+//              2 = IMAGE
+//              3 = IPCAM
+#define INPUT_MODE		3
+#define VIDEO_FILENAME	"Test.avi"
+#define IMAGE_FILENAME	"Test.jpg"
 
-//Threshold values
-int min_hue_;
-int max_hue_;
-int min_sat_;
-//erode/dilate passes
-float erode_passes_;
-int dilate_passes_;
 
 // Downcam Class
 class Downcam
@@ -51,13 +52,13 @@ protected:
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
 	cv::Mat img_split[2];
-	int  edges_allocated_,
-		 edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
-		 moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_, min_area_percentage_;
+	int  min_hue_, max_hue_, min_sat_, dilate_passes_, min_area_percentage_, edges_allocated_,
+		edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
+		moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_;
 	int *edges1_, *edges2_, *blanket1_, *blanket2_;
 	float erode_passes_;
 	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_,
-		   sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
+		sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
 	double *moving_alpha1_, *moving_beta1_, *moving_alpha2_, *moving_beta2_;
 	CvPoint pipe_centre_, point1_, point2_;
 	char angle_text_[50];
@@ -73,7 +74,7 @@ public:
 		image_sub_ = it_.subscribe("/gscam/image_raw", 1, &Downcam::imageCallback, this);
 		ROS_INFO("Got Cam");
 		
-		//Listen for new values
+		// Listen For New Values
 		min_hue_sub_ = nh_.subscribe("vision_hue_min", 1000, &Downcam::vision_hue_minCallback, this);
 		max_hue_sub_ = nh_.subscribe("vision_hue_max", 1000, &Downcam::vision_hue_maxCallback, this);
 		min_saturation_sub_ = nh_.subscribe("vision_saturation_min", 1000, &Downcam::vision_saturation_minCallback, this);
@@ -98,7 +99,7 @@ public:
 			min_sat_ = 50;
 			erode_passes_ = 10;
 			dilate_passes_ = 10;
-			min_area_percentage_ = 20;
+			min_area_percentage_ = 2;
 			moving_average_size_ = 10;
 		} else{
 			// Read The Values In With Defaults Set To The Best Values Found For The Test Video
@@ -112,7 +113,7 @@ public:
 			std::cout << "erode_passes = " << erode_passes_ << "\n";
 			dilate_passes_ = reader.GetInteger("dilate", "dilate_passes", 10);
 			std::cout << "dilation_passes = " << dilate_passes_ << "\n";
-			min_area_percentage_ = reader.GetInteger("pipe", "min_area_percentage", 20);
+			min_area_percentage_ = reader.GetInteger("pipe", "min_area_percentage", 2);
 			std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
 			moving_average_size_ = reader.GetInteger("angle", "moving_average_size", 10);
 			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
@@ -137,8 +138,10 @@ public:
 		moving_index_ = 0;
 
 	}
-	
-	//Message callback functions
+
+
+
+	// Message Callback Functions
 	void vision_hue_minCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -147,7 +150,7 @@ public:
 		min_hue_ = (int)data;
 		return;
 	}
-	
+
 	void vision_hue_maxCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -156,7 +159,7 @@ public:
 		max_hue_ = (int)data;
 		return;
 	}
-	
+
 	void vision_saturation_minCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -165,7 +168,7 @@ public:
 		min_sat_ = (int)data;
 		return;
 	}
-	
+
 	void vision_saturation_maxCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -173,7 +176,7 @@ public:
 		printf("New Brightness Value = %u \n", data);
 		return;
 	}	
-	
+
 	void vision_brightness_minCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -181,7 +184,7 @@ public:
 		printf("New Brightness Value = %u \n", data);
 		return;
 	}
-	
+
 	void vision_brightness_maxCallback(const std_msgs::Char::ConstPtr& msg)
 	{
 		uchar data;
@@ -189,6 +192,8 @@ public:
 		printf("New Brightness Value = %u \n", data);
 		return;
 	}
+
+
 
 	// Find Centre Function
 	CvPoint find_centre(cv::Mat *img_input, int min_area)
@@ -547,7 +552,7 @@ public:
 				// Blanket The Left & Right Edges
 				blanket(edges1_, blanket1_, edges1_index_, edges1_length_, 0);
 				blanket(edges2_, blanket2_, edges2_index_, edges2_length_, 1);
-				
+
 				// TEMPORARY SECTION ########### FOR DEBUGGING
 				img_thresh_ = cv::Mat::zeros(img_thresh_.rows, img_thresh_.cols, CV_8UC3);
 				for (i_ = 0; i_ < edges1_length_; i_++){
@@ -712,6 +717,11 @@ public:
 				point2_.y = pipe_centre_.y + 100;
 				line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
 
+				// Get The Z Distance From The Pipe
+				for (i_ = 0; i_ < img_bin_.rows; i_++){
+					
+				}
+
 				// Publish The Centre X, Centre Y, Angle & Estimated Distance To ROS
 				
 			}
@@ -744,86 +754,78 @@ public:
 
 int main(int argc, char **argv)
 {
+
+	// Declare Variables
+	cv::Mat video_frame;
+	IplImage video_frame2;
+	sensor_msgs::CvBridge bridge2_;
+
  	// Initialize ROS Node
  	ros::init(argc, argv, "ihr_demo1");
+ 
 	// Start Node & Create A Node Handle
 	ros::NodeHandle nh;
- 	// Instaniate Demo Object
+
+ 	// Instantiate Demo Object
 	ROS_INFO("Online");
 	Downcam d(nh);
-  	// Spin ...
 
-
-
-	/* Leave One Section Uncommented And The Others Commented Out */
-	/* Replace Video/Image Filename If Necessary (Files Should Be Stored In The "dwncam2" Folder) */
-
-
-	/****************** FOR CAMERA INPUT MODE ******************/
-  	//ros::spin();
-	/***********************************************************/
-	/********************FOR IP CAMERA INPUT MODE **************/
-    cv::VideoCapture vcap;
-    sensor_msgs::CvBridge bridge2_;
-    cv::Mat image;
-    IplImage video_frame_;
-	//http://192.168.2.30/mjpg/video.mjpg
-    const std::string videoStreamAddress = "rtsp://192.168.2.30:554/ipcam.sdp"; 
-    /* it may be an address of an mjpeg stream, 
-    e.g. "http://user:pass@cam_address:8081/cgi/mjpg/mjpg.cgi?.mjpg" */
-
-    //open the video stream and make sure it's opened
-    if(!vcap.open(videoStreamAddress)) {
-        std::cout << "Error opening video stream" << std::endl;
-        return -1;
-    }
-	
-    while(ros::ok()) {
-		ros::spinOnce();
-		printf("\n Reading \n");
-        while(!vcap.read(image)) {
-            std::cout << "No frame" << std::endl;
-            vcap.release();
-            vcap.open(videoStreamAddress);
-        }		
-		video_frame_ = image;
-		d.imageCallback(bridge2_.cvToImgMsg(&video_frame_, "passthrough"));
-    }
-     
-	/**********************************************************/
-
-	/****************** FOR VIDEO INPUT MODE ******************/
-/*	cv::Mat video_frame;
-	IplImage video_frame2;
-	sensor_msgs::CvBridge bridge2_;
-	cv::VideoCapture cap("Test.avi");
-    if(!cap.isOpened()){
-        	return -1;
+  	// Spin & Provide An Input If Necessary
+	if (INPUT_MODE == 0){
+		ros::spin();
+	} else if (INPUT_MODE == 1){
+		cv::VideoCapture cap(VIDEO_FILENAME);
+		if(!cap.isOpened()){
+			return -1;
+		}
+		while(ros::ok()){
+			ros::spinOnce();
+			if (cap.grab()){
+				cap.retrieve(video_frame);
+				video_frame2 = video_frame;
+				d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
+			} else{
+				cap.release();
+				cap.open(VIDEO_FILENAME);
+				if(!cap.isOpened()){
+					return -1;
+				}
+			}
+		}
+	} else if (INPUT_MODE == 2){
+		while(ros::ok()){
+			ros::spinOnce();
+			video_frame = cvLoadImage(IMAGE_FILENAME, CV_LOAD_IMAGE_COLOR);
+			video_frame2 = video_frame;
+			d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
+		}
+	} else if (INPUT_MODE == 3){
+		cv::VideoCapture vcap;
+		//http://192.168.2.30/mjpg/video.mjpg
+		const std::string videoStreamAddress = "rtsp://192.168.2.30:554/ipcam.sdp";
+		/* it may be an address of an mjpeg stream, 
+		e.g. "http://user:pass@cam_address:8081/cgi/mjpg/mjpg.cgi?.mjpg" */
+		//open the video stream and make sure it's opened
+		if (!vcap.open(videoStreamAddress)){
+			std::cout << "Error opening video stream" << std::endl;
+			return -1;
+		}
+		while (ros::ok()){
+			ros::spinOnce();
+			printf("\n Reading \n");
+			while (!vcap.read(video_frame)){
+				std::cout << "No frame" << std::endl;
+				vcap.release();
+				vcap.open(videoStreamAddress);
+			}
+			video_frame2 = video_frame;
+			d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
+		}
+	} else{
+		ros::spin();
 	}
-	while(ros::ok()){
-		ros::spinOnce();
-		cap >> video_frame;
-		video_frame2 = video_frame;
-		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
-	}
-*/
-	/**********************************************************/
 
-
-	/****************** FOR IMAGE INPUT MODE ******************/
-	/*cv::Mat video_frame;
-	IplImage video_frame2;
-	sensor_msgs::CvBridge bridge2_;
-	while(ros::ok()){
-		ros::spinOnce();
-		video_frame = cvLoadImage("a.jpg", CV_LOAD_IMAGE_COLOR);
-		video_frame2 = video_frame;
-		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
-	}*/
-	/**********************************************************/
-
-
-
-	// ... Until Done
+	// Return
 	return 0;
+
 }
