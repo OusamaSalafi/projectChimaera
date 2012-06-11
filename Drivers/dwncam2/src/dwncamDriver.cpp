@@ -63,10 +63,13 @@ protected:
 	char angle_text_[50];
 
 
+
 public:
 
 	Downcam(ros::NodeHandle & nh):nh_ (nh), it_ (nh_)
 	{
+		char* ass = "dwncam2_config.ini";
+		char file_path[300];
 
 		// Listen For Image Messages On A Topic And Setup Callback
 		ROS_INFO("Getting Cam");
@@ -87,9 +90,17 @@ public:
 		cv::namedWindow ("binary image", 1);
 		cv::namedWindow ("segmented output", 1);
 		ROS_INFO("Opened Windows");
-
+//Read in the environmental variable that stores the location of the config files
+		char *configpath = getenv("SUB_CONFIG_PATH");
+		if (configpath == NULL)
+		{
+		std::cout << "Problem getting SUB_CONFIG_PATH variable." << std::endl;
+		exit(-1);
+		}
+		//filepath=configpath+filename
+		sprintf(file_path, "%s%s", configpath, ass);
 		// Read The Downcam Config File
-		INIReader reader("~/projectChimaera/Config/dwncam2_config.ini");
+		INIReader reader(file_path);
 		// Check The File Can Be Opened
 		if (reader.ParseError() < 0){
 			std::cout << "Failed To Load \"~/projectChimaera/Config/dwncam2_config.ini\"\n";
@@ -780,7 +791,6 @@ int main(int argc, char **argv)
 	
     while(ros::ok()) {
 		ros::spinOnce();
-		printf("\n Reading \n");
         while(!vcap.read(image)) {
             std::cout << "No frame" << std::endl;
             vcap.release();
