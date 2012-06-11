@@ -13,7 +13,16 @@
 #include "INIReader.h"
 #include "cv_bridge/CvBridge.h"
 #include "sensor_msgs/Image.h"
+#include "std_msgs/Char.h"
 
+
+//Threshold values
+int min_hue_;
+int max_hue_;
+int min_sat_;
+//erode/dilate passes
+float erode_passes_;
+int dilate_passes_;
 
 // Downcam Class
 class Downcam
@@ -22,6 +31,14 @@ class Downcam
 protected:
 
 	ros::NodeHandle nh_;
+	//For receiving new threshold values on the fly
+	ros::Subscriber min_hue_sub_;
+	ros::Subscriber max_hue_sub_;
+	ros::Subscriber min_saturation_sub_;
+	ros::Subscriber max_saturation_sub_;
+	ros::Subscriber min_brightness_sub_;
+	ros::Subscriber max_brightness_sub_;
+	
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
 	sensor_msgs::CvBridge bridge_;
@@ -34,13 +51,13 @@ protected:
 	cv::Mat img_bin_;
 	cv::Mat img_out_;
 	cv::Mat img_split[2];
-	int min_hue_, max_hue_, min_sat_, dilate_passes_, min_area_percentage_, edges_allocated_,
-	edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
-	moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_;
+	int  edges_allocated_,
+		 edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
+		 moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_, min_area_percentage_;
 	int *edges1_, *edges2_, *blanket1_, *blanket2_;
 	float erode_passes_;
 	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_,
-	sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
+		   sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
 	double *moving_alpha1_, *moving_beta1_, *moving_alpha2_, *moving_beta2_;
 	CvPoint pipe_centre_, point1_, point2_;
 	char angle_text_[50];
@@ -55,6 +72,14 @@ public:
 		ROS_INFO("Getting Cam");
 		image_sub_ = it_.subscribe("/gscam/image_raw", 1, &Downcam::imageCallback, this);
 		ROS_INFO("Got Cam");
+		
+		//Listen for new values
+		min_hue_sub_ = nh_.subscribe("vision_hue_min", 1000, &Downcam::vision_hue_minCallback, this);
+		max_hue_sub_ = nh_.subscribe("vision_hue_max", 1000, &Downcam::vision_hue_maxCallback, this);
+		min_saturation_sub_ = nh_.subscribe("vision_saturation_min", 1000, &Downcam::vision_saturation_minCallback, this);
+		max_saturation_sub_ = nh_.subscribe("vision_saturation_max", 1000, &Downcam::vision_saturation_maxCallback, this);
+		min_brightness_sub_ = nh_.subscribe("vision_brightness_min", 1000, &Downcam::vision_brightness_minCallback, this);
+		max_brightness_sub_ = nh_.subscribe("vision_brightness_max", 1000, &Downcam::vision_brightness_maxCallback, this);
 
 		// Open HighGUI Windows
 		cv::namedWindow ("input", 1);
@@ -64,10 +89,10 @@ public:
 		ROS_INFO("Opened Windows");
 
 		// Read The Downcam Config File
-		INIReader reader("../../Config/dwncam2_config.ini");
+		INIReader reader("~/projectChimaera/Config/dwncam2_config.ini");
 		// Check The File Can Be Opened
 		if (reader.ParseError() < 0){
-			std::cout << "Failed To Load \"../../Config/dwncam2_config.ini\"\n";
+			std::cout << "Failed To Load \"~/projectChimaera/Config/dwncam2_config.ini\"\n";
 			min_hue_ = 4;
 			max_hue_ = 34;
 			min_sat_ = 50;
@@ -112,8 +137,58 @@ public:
 		moving_index_ = 0;
 
 	}
-
-
+	
+	//Message callback functions
+	void vision_hue_minCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Hue Value = %u \n", data);
+		min_hue_ = (int)data;
+		return;
+	}
+	
+	void vision_hue_maxCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Brightness Value = %u \n", data);
+		max_hue_ = (int)data;
+		return;
+	}
+	
+	void vision_saturation_minCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Saturation Value = %u \n", data);
+		min_sat_ = (int)data;
+		return;
+	}
+	
+	void vision_saturation_maxCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Brightness Value = %u \n", data);
+		return;
+	}	
+	
+	void vision_brightness_minCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Brightness Value = %u \n", data);
+		return;
+	}
+	
+	void vision_brightness_maxCallback(const std_msgs::Char::ConstPtr& msg)
+	{
+		uchar data;
+		data = msg->data;
+		printf("New Brightness Value = %u \n", data);
+		return;
+	}
 
 	// Find Centre Function
 	CvPoint find_centre(cv::Mat *img_input, int min_area)
@@ -351,9 +426,9 @@ public:
 		// Threshold The Image
 		for (i_ = 0; i_ < img_hue_.rows; i_++){
 			for (j_ = 0; j_ < img_hue_.cols; j_++){
-				if (img_hue_.at<uchar>(i_, j_) > min_hue_ &&
-				img_hue_.at<uchar>(i_, j_) < max_hue_ &&
-				img_sat_.at<uchar>(i_, j_) > min_sat_){
+				if (img_hue_.at<uchar>(i_, j_) >= min_hue_ &&
+				img_hue_.at<uchar>(i_, j_) <= max_hue_ &&
+				img_sat_.at<uchar>(i_, j_) >= min_sat_){
 					img_thresh_.at<uchar>(i_, j_) = 255;
 				}
 			}
@@ -687,10 +762,38 @@ int main(int argc, char **argv)
 	/****************** FOR CAMERA INPUT MODE ******************/
   	//ros::spin();
 	/***********************************************************/
+	/********************FOR IP CAMERA INPUT MODE **************/
+    cv::VideoCapture vcap;
+    sensor_msgs::CvBridge bridge2_;
+    cv::Mat image;
+    IplImage video_frame_;
+	//http://192.168.2.30/mjpg/video.mjpg
+    const std::string videoStreamAddress = "rtsp://192.168.2.30:554/ipcam.sdp"; 
+    /* it may be an address of an mjpeg stream, 
+    e.g. "http://user:pass@cam_address:8081/cgi/mjpg/mjpg.cgi?.mjpg" */
 
+    //open the video stream and make sure it's opened
+    if(!vcap.open(videoStreamAddress)) {
+        std::cout << "Error opening video stream" << std::endl;
+        return -1;
+    }
+	
+    while(ros::ok()) {
+		ros::spinOnce();
+		printf("\n Reading \n");
+        while(!vcap.read(image)) {
+            std::cout << "No frame" << std::endl;
+            vcap.release();
+            vcap.open(videoStreamAddress);
+        }		
+		video_frame_ = image;
+		d.imageCallback(bridge2_.cvToImgMsg(&video_frame_, "passthrough"));
+    }
+     
+	/**********************************************************/
 
 	/****************** FOR VIDEO INPUT MODE ******************/
-	cv::Mat video_frame;
+/*	cv::Mat video_frame;
 	IplImage video_frame2;
 	sensor_msgs::CvBridge bridge2_;
 	cv::VideoCapture cap("Test.avi");
@@ -703,6 +806,7 @@ int main(int argc, char **argv)
 		video_frame2 = video_frame;
 		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
 	}
+*/
 	/**********************************************************/
 
 
