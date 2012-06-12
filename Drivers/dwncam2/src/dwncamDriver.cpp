@@ -14,6 +14,8 @@
 #include "cv_bridge/CvBridge.h"
 #include "sensor_msgs/Image.h"
 #include "std_msgs/Char.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/Int32.h"
 
 // Defines
 // Input Modes: 0 = GSCAM
@@ -47,6 +49,15 @@ protected:
 	ros::Subscriber min_brightness_sub_;
 	ros::Subscriber max_brightness_sub_;
 	
+	/*Advertises image X, Y and angle*/
+	ros::Publisher p_X_;
+	ros::Publisher p_Y_; 
+	ros::Publisher p_theta_;
+	
+	//Messages for sending the data
+	std_msgs::Int32 pipe_X_, pipe_Y_;
+	std_msgs::Float32 pipe_theta_;
+	
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
 	sensor_msgs::CvBridge bridge_;
@@ -63,14 +74,17 @@ protected:
 		 edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
 		 moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_, min_area_percentage_;
 	int *edges1_, *edges2_, *blanket1_, *blanket2_;
-	float erode_passes_;
+	//float erode_passes_;
 	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_,
 		   sy2_, sxx2_, sxy2_, alpha2_, beta2_, alpha3_, beta3_, a1_, a2_, a3_;
 	double *moving_alpha1_, *moving_beta1_, *moving_alpha2_, *moving_beta2_;
 	CvPoint pipe_centre_, point1_, point2_;
 	char angle_text_[50];
-
-
+	//Counter for taking screenshots
+	int screenshot_counter_, screenshot_trigger_,image_counter_;
+	char *logpath;
+	//filepath for saving images
+	char savepath[300];
 
 public:
 
@@ -78,6 +92,11 @@ public:
 	{
 		char* ass = "dwncam2_config.ini";
 		char file_path[300];
+
+		//setup publishers to realease pipe details
+		p_X_ = nh_.advertise<std_msgs::Char>("pipe_X", 100);
+		p_Y_ = nh_.advertise<std_msgs::Char>("pipe_Y", 100);
+		p_theta_ = nh_.advertise<std_msgs::Char>("pipe_theta", 100);
 
 		// Listen For Image Messages On A Topic And Setup Callback
 		ROS_INFO("Getting Cam");
@@ -119,6 +138,7 @@ public:
 			dilate_passes_ = 10;
 			min_area_percentage_ = 20;
 			moving_average_size_ = 10;
+			screenshot_trigger_ = 500;
 		} else{
 			// Read The Values In With Defaults Set To The Best Values Found For The Test Video
 			min_hue_ = reader.GetInteger("hue", "min_hue", 4);
@@ -135,7 +155,18 @@ public:
 			std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
 			moving_average_size_ = reader.GetInteger("angle", "moving_average_size", 10);
 			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
+			screenshot_trigger_ = reader.GetInteger("counters", "screenshot_trigger", 500);
 		}
+		//Read the location of the log file
+		logpath = getenv("SUB_LOG_PATH");
+		if (logpath == NULL)
+		{
+		std::cout << "Problem getting SUB_LOG_PATH variable." << std::endl;
+		exit(-1);
+		}
+		//start the screenshot counter
+		screenshot_counter_ = 0;
+		image_counter_ = 0;
 		
 		// Make Sure The Moving Average Size Is Greater Than Zero
 		if (moving_average_size_ < 1){
@@ -731,8 +762,29 @@ public:
 				point2_.y = pipe_centre_.y + 100;
 				line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
 
+				//save image when pipe first found and every X frames following
+				if((screenshot_counter_ == 0)||(screenshot_counter_ == screenshot_trigger_))
+				{
+					//create the filepath from the image counter and the image name
+					sprintf(savepath, "%simg_in_%i.jpg",logpath, image_counter_);
+					//save
+					cv::imwrite(savepath, img_in_);
+					image_counter_++;
+					screenshot_counter_ = 0;
+				}
+				//counter will only be 0 once, so we will always getr an image saved of the
+				//first contact with the pipe
+				screenshot_counter_++;
 				// Publish The Centre X, Centre Y, Angle & Estimated Distance To ROS
-				
+				//X 
+				pipe_X_.data = pipe_centre_.x; 
+				p_X_.publish(pipe_X_);
+				//Y
+				pipe_Y_.data = pipe_centre_.y; 
+				p_Y_.publish(pipe_Y_);
+				//theta
+				pipe_theta_.data = a1_; 
+				p_theta_.publish(pipe_theta_);
 			}
 
 		} else{
@@ -869,7 +921,6 @@ int main(int argc, char **argv)
 		}
 		while (ros::ok()){
 			ros::spinOnce();
-			printf("\n Reading \n");
 			while (!vcap.read(video_frame)){
 				std::cout << "No frame" << std::endl;
 				vcap.release();
