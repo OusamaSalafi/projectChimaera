@@ -52,11 +52,12 @@ protected:
 	/*Advertises image X, Y and angle*/
 	ros::Publisher p_X_;
 	ros::Publisher p_Y_; 
+	ros::Publisher p_Z_; 
 	ros::Publisher p_theta_;
 	
 	//Messages for sending the data
 	std_msgs::Int32 pipe_X_, pipe_Y_;
-	std_msgs::Float32 pipe_theta_;
+	std_msgs::Float32 pipe_Z_, pipe_theta_;
 	
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
@@ -72,7 +73,7 @@ protected:
 	cv::Mat img_split[2];
 	int  edges_allocated_,
 		 edges1_index_, edges1_length_, edges1_marker_, edges2_index_, edges2_length_, edges2_marker_,
-		 moving_average_size_, moving_length_, moving_index_, i_, j_, n_, n2_, min_area_percentage_;
+		 moving_average_size_, moving_length_, moving_index_, i_, j_, k_, n_, n2_, min_area_percentage_;
 	int *edges1_, *edges2_, *blanket1_, *blanket2_;
 	//float erode_passes_;
 	double sx_, sy_, sxx_, sxy_, alpha_, beta_, sx2_,
@@ -96,6 +97,7 @@ public:
 		//setup publishers to realease pipe details
 		p_X_ = nh_.advertise<std_msgs::Char>("pipe_X", 100);
 		p_Y_ = nh_.advertise<std_msgs::Char>("pipe_Y", 100);
+		p_Z_ = nh_.advertise<std_msgs::Char>("pipe_Z", 100);
 		p_theta_ = nh_.advertise<std_msgs::Char>("pipe_theta", 100);
 
 		// Listen For Image Messages On A Topic And Setup Callback
@@ -112,12 +114,13 @@ public:
 		max_brightness_sub_ = nh_.subscribe("vision_brightness_max", 1000, &Downcam::vision_brightness_maxCallback, this);
 
 		// Open HighGUI Windows
-//		cv::namedWindow ("input", 1);
-//		cv::namedWindow ("thresholded image", 1);
-//		cv::namedWindow ("binary image", 1);
-//		cv::namedWindow ("segmented output", 1);
-//		ROS_INFO("Opened Windows");
-//Read in the environmental variable that stores the location of the config files
+		/*cv::namedWindow ("input", 1);
+		cv::namedWindow ("thresholded image", 1);
+		cv::namedWindow ("binary image", 1);
+		cv::namedWindow ("segmented output", 1);
+		ROS_INFO("Opened Windows");*/
+
+		//Read in the environmental variable that stores the location of the config files
 		char *configpath = getenv("SUB_CONFIG_PATH");
 		if (configpath == NULL)
 		{
@@ -126,6 +129,7 @@ public:
 		}
 		//filepath=configpath+filename
 		sprintf(file_path, "%s%s", configpath, ass);
+
 		// Read The Downcam Config File
 		INIReader reader(file_path);
 		// Check The File Can Be Opened
@@ -157,6 +161,7 @@ public:
 			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
 			screenshot_trigger_ = reader.GetInteger("counters", "screenshot_trigger", 500);
 		}
+
 		//Read the location of the log file
 		logpath = getenv("SUB_LOG_PATH");
 		if (logpath == NULL)
@@ -164,6 +169,7 @@ public:
 		std::cout << "Problem getting SUB_LOG_PATH variable." << std::endl;
 		exit(-1);
 		}
+
 		//start the screenshot counter
 		screenshot_counter_ = 0;
 		image_counter_ = 0;
@@ -621,10 +627,6 @@ public:
 				sxx_ = 0.0;
 				sxy_ = 0.0;
 				for (i_ = 0; i_ < edges1_length_; i_++){
-					/*sx_ += (double)(edges1_[edges1_index_ + i_]);
-					sy_ += (double)(edges1_index_ + i_);
-					sxx_ += (double)(pow(edges1_[edges1_index_ + i_], 2.0));
-					sxy_ += (double)((double)(edges1_index_ + i_) * (double)(edges1_[edges1_index_ + i_]));*/
 					sx_ += (double)(blanket1_[edges1_index_ + i_]);
 					sy_ += (double)(edges1_index_ + i_);
 					sxx_ += (double)(pow(blanket1_[edges1_index_ + i_], 2.0));
@@ -636,10 +638,6 @@ public:
 				sxx2_ = 0.0;
 				sxy2_ = 0.0;
 				for (i_ = 0; i_ < edges2_length_; i_++){
-					/*sx2_ += (double)(edges2_[edges2_index_ + i_]);
-					sy2_ += (double)(edges2_index_ + i_);
-					sxx2_ += (double)(pow(edges2_[edges2_index_ + i_], 2.0));
-					sxy2_ += (double)((double)(edges2_index_ + i_) * (double)(edges2_[edges2_index_ + i_]));*/
 					sx2_ += (double)(blanket2_[edges2_index_ + i_]);
 					sy2_ += (double)(edges2_index_ + i_);
 					sxx2_ += (double)(pow(blanket2_[edges2_index_ + i_], 2.0));
@@ -649,11 +647,17 @@ public:
 				// Get The Left Line
 				beta_ = (double)(((double)(n_ * sxy_) - (double)(sx_ * sy_)) / ((double)(n_ * sxx_) - (double)(pow(sx_, 2))));
 				alpha_ = (double)((double)(sy_ / (double)(n_)) - (double)(beta_ * sx_ / (double)(n_)));
+				if (isnanf(beta_) || beta_ > 999){
+					beta_ = 999;
+				}
 				moving_alpha1_[moving_index_] = alpha_;
 				moving_beta1_[moving_index_] = beta_;
 
 				// Get The Right Line
 				beta2_ = (double)(((double)(n2_ * sxy2_) - (double)(sx2_ * sy2_)) / ((double)(n2_ * sxx2_) - (double)(pow(sx2_, 2))));
+				if (isnanf(beta2_) || beta2_ > 999){
+					beta2_ = 999;
+				}
 				alpha2_ = (double)((double)(sy2_ / (double)(n2_)) - (double)(beta2_ * sx2_ / (double)(n2_)));
 				moving_alpha2_[moving_index_] = alpha2_;
 				moving_beta2_[moving_index_] = beta2_;
@@ -688,7 +692,7 @@ public:
 				point1_.y = 0;
 				point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha_) / beta_);
 				point2_.y = img_bin_.rows - 1;
-				line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+				//line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
 				line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
 
 				// Plot The Right Line
@@ -696,7 +700,7 @@ public:
 				point1_.y = 0;
 				point2_.x = (int)((double)(img_bin_.rows - 1.0 - alpha2_) / beta2_);
 				point2_.y = img_bin_.rows - 1;
-				line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
+				//line(img_bin_, point1_, point2_, cvScalar(128, 128, 128, 0), 1, 8, 0);
 				line(img_in_, point1_, point2_, cvScalar(0, 0, 255, 0), 1, 8, 0);
 
 				// Get The Central Line
@@ -723,6 +727,9 @@ public:
 						beta3_ = tan(a3_);
 					}
 				}
+				if (isnanf(beta3_) || beta3_ > 999){
+					beta3_ = 999;
+				}
 				if (beta_ == beta2_){
 					point1_.x = 0;
 					point1_.y = (double)((double)(alpha_ + alpha2_) / 2.0);
@@ -747,7 +754,7 @@ public:
 				} else{
 					a1_ = 90.0 - a1_;
 				}
-				sprintf(angle_text_, "Pipe Angle Detected: %.2f", a1_);
+				sprintf(angle_text_, "Pipe Angle: %.2f", a1_);
 				putText(img_in_, angle_text_, cvPoint(50, 75), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0, 0, 0), 1, CV_AA);
 
 				// Display The Pipe Centre Point On The Input Image
@@ -762,6 +769,58 @@ public:
 				point2_.y = pipe_centre_.y + 100;
 				line(img_in_, point1_, point2_, cvScalar(255, 0, 255, 0), 1, 8, 0);
 
+				// Get The Z Distance
+				n_ = 0;
+				n2_ = 0;
+				k_ = 0;
+				for (i_ = 0; i_ < img_bin_.rows; i_++){
+					point1_.x = (int)((double)((double)(i_) - alpha3_) / beta3_);
+					if (point1_.x >= 0 && point1_.x < img_bin_.cols){
+						n2_ = 0;
+						point1_.y = i_;
+						for (j_ = point1_.x - 1; j_ >= 0; j_--){
+							point1_.y -= (int)(-1.0 / beta3_);
+							if (point1_.y >= 0 && point1_.y < img_bin_.rows){
+								if (img_bin_.at<uchar>(point1_.y, j_) == 255){
+									k_ += 1;
+									if (n2_ == 0){
+										n_ += 1;
+										n2_ = 1;
+									}
+								} else{
+									break;
+								}
+							} else{
+								break;
+							}
+						}
+						point1_.y = i_;
+						for (j_ = point1_.x + 1; j_ < img_bin_.cols; j_++){
+							point1_.y += (int)(-1.0 / beta3_);
+							if (point1_.y >= 0 && point1_.y < img_bin_.rows){
+								if (img_bin_.at<uchar>(point1_.y, j_) == 255){
+									k_ += 1;
+									if (n2_ == 0){
+										n_ += 1;
+										n2_ = 1;
+									}
+								} else{
+									break;
+								}
+							} else{
+								break;
+							}
+						}
+					}
+				}
+				if (n_ > 0){
+					a2_ = (double)(100.0 * (double)(n_) / (double)(k_));
+				} else{
+					a2_ = 100.0;
+				}
+				sprintf(angle_text_, "Z Distance: %.2f", a2_);
+				putText(img_in_, angle_text_, cvPoint(250, 75), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0, 0, 0), 1, CV_AA);
+
 				//save image when pipe first found and every X frames following
 				if((screenshot_counter_ == 0)||(screenshot_counter_ == screenshot_trigger_))
 				{
@@ -775,13 +834,16 @@ public:
 				//counter will only be 0 once, so we will always getr an image saved of the
 				//first contact with the pipe
 				screenshot_counter_++;
-				// Publish The Centre X, Centre Y, Angle & Estimated Distance To ROS
+				// Publish The Centre X, Centre Y, Z Distance & Angle To ROS
 				//X 
 				pipe_X_.data = pipe_centre_.x; 
 				p_X_.publish(pipe_X_);
 				//Y
 				pipe_Y_.data = pipe_centre_.y; 
 				p_Y_.publish(pipe_Y_);
+				//Z
+				pipe_Z_.data = a2_; 
+				p_Z_.publish(pipe_Z_);
 				//theta
 				pipe_theta_.data = a1_; 
 				p_theta_.publish(pipe_theta_);
@@ -796,13 +858,13 @@ public:
 		}
 
 		// Display The Input image
-//		cv::imshow ("input", img_in_);
+		//cv::imshow ("input", img_in_);
 		// Display The Thresholded Image
-//		cv::imshow ("thresholded image", img_thresh_);
+		//cv::imshow ("thresholded image", img_thresh_);
 		// Display The Binary Image
-//		cv::imshow ("binary image", img_bin_);
+		//cv::imshow ("binary image", img_bin_);
 		// Display The Segmented Image
-//		cv::imshow ("segmented output", img_out_);
+		//cv::imshow ("segmented output", img_out_);
 		
 		// Allow The HighGUI Windows To Stay Open
 		cv::waitKey(3);
@@ -831,54 +893,6 @@ int main(int argc, char **argv)
 	ROS_INFO("Online");
 	Downcam d(nh);
 
-
-
-	/****************** FOR CAMERA INPUT MODE ******************/
-  	//ros::spin();
-	/***********************************************************/
-	/********************FOR IP CAMERA INPUT MODE **************/
-/*    cv::VideoCapture vcap;
-    sensor_msgs::CvBridge bridge2_;
-    cv::Mat image;
-    IplImage video_frame_;
-	//http://192.168.2.30/mjpg/video.mjpg
-    const std::string videoStreamAddress = "rtsp://192.168.2.30:554/ipcam.sdp"; 
-    /* it may be an address of an mjpeg stream, 
-    e.g. "http://user:pass@cam_address:8081/cgi/mjpg/mjpg.cgi?.mjpg" 
-
-    //open the video stream and make sure it's opened
-    if(!vcap.open(videoStreamAddress)) {
-        std::cout << "Error opening video stream" << std::endl;
-        return -1;
-    }
-	
-    while(ros::ok()) {
-		ros::spinOnce();
-        while(!vcap.read(image)) {
-            std::cout << "No frame" << std::endl;
-            vcap.release();
-            vcap.open(videoStreamAddress);
-        }		
-		video_frame_ = image;
-		d.imageCallback(bridge2_.cvToImgMsg(&video_frame_, "passthrough"));
-    }
-     
-	/**********************************************************/
-
-	/****************** FOR VIDEO INPUT MODE ******************/
-/*	cv::Mat video_frame;
-	IplImage video_frame2;
-	sensor_msgs::CvBridge bridge2_;
-	cv::VideoCapture cap("Test.avi");
-    if(!cap.isOpened()){
-        	return -1;
-	}
-	while(ros::ok()){
-		ros::spinOnce();
-		cap >> video_frame;
-		video_frame2 = video_frame;
-		d.imageCallback(bridge2_.cvToImgMsg(&video_frame2, "passthrough"));
-*/
   	// Spin & Provide An Input If Necessary
 	if (INPUT_MODE == 0){
 		ros::spin();
