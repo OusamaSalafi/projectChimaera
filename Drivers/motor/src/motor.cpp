@@ -83,10 +83,10 @@ void goCallback(const std_msgs::UInt32::ConstPtr& pilotGo){
 *************************************************/
 
 void alertCallback(const std_msgs::UInt32::ConstPtr& alertFront){
-	frontPWM = alertFront->data;
+	//frontPWM = alertFront->data;
 
-	ROS_DEBUG("Alert: %u",frontPWM);
-	updatePWM(FRONT_MOTOR_CHANNEL, frontPWM);
+	//ROS_DEBUG("Alert: %u",frontPWM);
+	//updatePWM(FRONT_MOTOR_CHANNEL, frontPWM);
 	return;
 }
 
