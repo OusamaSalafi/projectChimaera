@@ -4,9 +4,7 @@
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
-  double vx = 0.0;
-  double vy = 0.0;
-  double vth = 0.0;  
+  
   
   geometry_msgs::Quaternion orient;
   geometry_msgs::Vector3 angVel;
@@ -24,8 +22,12 @@ int main(int argc, char** argv){
   
   //sensor_msgs::Imu sub1;
 
-	
+  double vx = 0.0;
+  double vy = 0.0;
+  double vth = 0.0;	
 
+  double deltavx = 0.0;
+  double deltavy = 0.0;
   
   double x = 0.0;
   double y = 0.0;
@@ -50,7 +52,9 @@ int main(int argc, char** argv){
   double calAccx = 0.0;
   double calAccy = 0.0;
   double calAccth = 0.0;
-  int calCount = 0.0;
+  int calCount = 0;
+  int velCount = 0;
+  int Count = 0;
   
   bool calibrated = false;
 
@@ -87,9 +91,15 @@ int main(int argc, char** argv){
     accy = linAcc.y;
     accth = linAcc.z;
     
-    if ((accx > -0.0) && (accx < 0.1)){
+    if ((accx > 0.00) && (accx < 0.05)){
     //accx = 0;
     prevVelx = 0;
+     
+    }
+    
+    if ((accy > 0.0) && (accy < 0.06)){
+    //accx = 0;
+    prevVely = 0;
      
     }/*
     if (((prevVelx > 1) || (prevVelx < -1)) || ((prevVelx < 0.0001) || (prevVelx > -0.0001))){ //PLAY WITH THIS TILL IT WORKS!
@@ -98,15 +108,32 @@ int main(int argc, char** argv){
     
     
     
-        
+    /*    
     if (((accy > 0) && (accy < 0.5)) || ((accy < 0) && (accy > -0.5))){
     //accy = 0;
     prevVely = 0;
+    }*/
+    
+    deltavx += prevVelx + (accx * dt);// Velocity in X
+    deltavy += prevVely + (accy * dt);// Velocity in Y
+    vth = angVel.z;
+    velCount += 1;
+    
+    
+    if (velCount == 3){
+    velCount = 0;
+    vx = deltavx / 3;
+    vy = deltavy / 3;
+    deltavx = 0;
+    deltavy = 0;
     }
     
-    vx = prevVelx + (accx * dt);// Velocity in X
-    vy = prevVely + (accy * dt);// Velocity in Y
-    vth = angVel.z;
+    /*if (Count == 101){
+    Count = 0;
+    prevVelx = 0;
+    prevVely = 0;
+    }
+    Count += 1;*/
     
     printf("T = %f \n", dt);
     printf("X velocity = %+#7.3f \n", vx);   
@@ -189,7 +216,7 @@ int main(int argc, char** argv){
     odom_pub.publish(odom);
 
     prevVelx = vx;
-    //prevVely = vy;
+    prevVely = vy;
     //prevVelth = vth;
     last_time = current_time;
     }
