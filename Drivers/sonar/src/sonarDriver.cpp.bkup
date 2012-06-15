@@ -1073,8 +1073,8 @@ void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBER
 	//Run each time
 	for (int i = 0; i < 90; i++)
 		{
-			sonarScan.intensities.push_back(sonarBinArray[i]); //chuck the bins into one line of the scan as intensity
-			sonarScan.ranges.push_back(i);
+			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges.push_back(sonarBinArray[i]);
 		}
 
 	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
@@ -1092,15 +1092,15 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 	//Set Up - Might not work being done every time it's needed.:
 	
 	double sonar_frequency = 2000; //same as usleep???
-	int num_sonar_readings = 6399; //360 / (0.89 *( STEPANGLE/8)); //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
+	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
-	sonarScan.header.frame_id = "/base_sonar"; 
+	sonarScan.header.frame_id = "/sonar"; 
 
-	sonarScan.angle_min = 0; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
-	sonarScan.angle_max = 6.28318531; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
-	sonarScan.angle_increment = (0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
+	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
+	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
 
-	sonarScan.time_increment = 1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
 	sonarScan.range_min = 0;
 	sonarScan.range_max = RANGE;

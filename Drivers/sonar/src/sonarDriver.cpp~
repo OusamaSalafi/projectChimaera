@@ -40,10 +40,9 @@ unsigned char 	header,		//Message Header.
 				term;		//Message Terminator
 
 unsigned int	bins,
-		bearing,
-		bearingOld,
-		bearingFail,
-		sonarDirection = 1;		
+		bearing;//,
+		//bearingOld,
+		//bearingFail;		
 
 unsigned int bp1_temp[263],	//Clone dataset, for bad packet recovery
 			bp1_buffLen,
@@ -127,8 +126,8 @@ int main( int argc, char **argv )
 			{
 				//SCANSTARE = 0x2B;
 				//RANGE = 5;
-				LEFTANGLE = 3300;
-				RIGHTANGLE = 3600;
+				//LEFTANGLE = 3200;
+				//RIGHTANGLE = 3300;
 				
 				headSetup();
 				switchFlag = 1;
@@ -203,53 +202,22 @@ int main( int argc, char **argv )
 				//tcflush(fd, TCIFLUSH);//remove
 				//pass datas	
 				
-/*	Hack to fix the bearing mess up between ~3327-3599, dafuq. */
+/*	Hack to fix the bearing mess up between ~3300-3600, dafuq. 
 
-				//printf("%d - ", bearing);
-
-				if(sonarDirection == UP)
-				{
-
-					if( bearingOld != bearing - (STEPANGLE * 2) && bearingOld != 0)
-					{
-						if((bearing >= 0 && bearing <= 100) && (bearingOld <= 6399 && bearingOld >= 6300))  
-							bearingFail = 0;
-						else
-							bearingFail = 1;
-					}
-					if( (bearing > bearingOld + 700)  && bearingFail == 1)
-						bearingFail = 0;
-	
-				}
-				else
-				{
-
-					if( bearingOld != bearing + (STEPANGLE * 2) && bearingOld != 0)
-					{
-						if((bearingOld >= 0 && bearingOld <= 100) && (bearing <= 6399 && bearing >= 6300))  
-							bearingFail = 0;
-						else
-							bearingFail = 1;
-					}
-					if( (bearing > bearingOld + 700)  && bearingFail == 1)
-						bearingFail = 0;
-	
-				}				
+				if( bearingOld > bearing)
+					bearingFail = 1;
+				else if( bearing > 3500 || (bearing >= 0 || bearing <= 100))
+					bearingFail = 0;
 				if(bearingFail == 1)
 				{
-					//bearing = bearing + 768;
-					sonarBearing.data = (float) bearing + 768;
+				bearing = bearing + 1000;
 				}
-				else
-				{
-				 	sonarBearing.data = (float) bearing;
-				}
-				//printf("%d -- %d\n", bearing, bearingFail);
-
-/* end fix */				
-
-				//sonarBearing.data = (float) bearing;
+					
+*/			
+				sonarBearing.data = (float) bearing;
 				sonarBins.data = (float) bins;
+				
+				printf("bearing = %d\n", bearing);
 				
 				sonarBinsArr.data.clear();
 				for (int k = 0; k < 90; k++)
@@ -271,7 +239,7 @@ int main( int argc, char **argv )
 				//printf("%d - %d\n", bearing, bins);
 				//ros::spinOnce();
 				i++;	
-				bearingOld = bearing;
+				//bearingOld = bearing;
 
 
 					
@@ -283,7 +251,6 @@ int main( int argc, char **argv )
 		}
 		
 		ros::spinOnce();
-		//sleep(1);
 		
 	}
 
@@ -565,10 +532,10 @@ int sortPacket(void)
 		if(msg[0] == mtHeadData)
 		{
 
-//			if(byteCount == 0)
-//				printf("Single Packet\n");
-//			else
-//				printf("Multi Packet\n");
+			if(byteCount == 0)
+				printf("Single Packet\n");
+			else
+				printf("Multi Packet\n");
 			binFlag = 0;
 			//printf("\nBearing: %f\n Bins: ", (float) getU16(temp[41], temp[40]) / 17.775 );
 			for(i = 44; i < buffLen-1; i++ )
@@ -743,7 +710,7 @@ void makeHeadPacket(unsigned int range, unsigned int startAngle, unsigned int en
 					0x80,
 					0x02,
 					0x1D,						//Head Command Type - 1 = Normal, 29 Dual Channel
-					0x83, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
+					0x87, SCANSTARE,					//HdCtrl bytes  0x85, 0x23, | 0x83, 0x2B
 					0x03,						//Head Type
 					0x99, 0x99, 0x99, 0x02,		//TxN Channel 1
 					0x66, 0x66, 0x66, 0x05,		//TxN Channel 2
@@ -981,7 +948,7 @@ int requestData( void )
 		//	tcflush(fd, TCIFLUSH);//remove
 		//	usleep(50);//remove
 			makePacket(mtSendData);
-//			ROS_INFO("requestData \t>> mtSendData\n");
+			ROS_INFO("requestData \t>> mtSendData\n");
 			//tcflush(fd, TCIFLUSH);//remove
 			//usleep(50);//remove
 			sendFlag = 1;
@@ -994,7 +961,7 @@ int requestData( void )
 			//if you get some data back go forth
 			if(returnMsg() == mtHeadData)
 			{
-//				ROS_INFO("requestData \t<< mtHeadData!!\n");
+				ROS_INFO("requestData \t<< mtHeadData!!\n");
 				headPack = 1;
 				return 0;
 
@@ -1073,8 +1040,8 @@ void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBER
 	//Run each time
 	for (int i = 0; i < 90; i++)
 		{
-			sonarScan.intensities.push_back(sonarBinArray[i]); //chuck the bins into one line of the scan as intensity
-			sonarScan.ranges.push_back(i);
+			sonarScan.intensities.push_back(i); //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges.push_back(sonarBinArray[i]);
 		}
 
 	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
@@ -1092,15 +1059,15 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 	//Set Up - Might not work being done every time it's needed.:
 	
 	double sonar_frequency = 2000; //same as usleep???
-	int num_sonar_readings = 6399; //360 / (0.89 *( STEPANGLE/8)); //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
+	int num_sonar_readings = 6399; //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
-	sonarScan.header.frame_id = "/base_sonar"; 
+	sonarScan.header.frame_id = "/sonar"; 
 
-	sonarScan.angle_min = 0; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
-	sonarScan.angle_max = 6.28318531; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
-	sonarScan.angle_increment = (0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+	sonarScan.angle_min = -0.0000017126; //see SLAM wiki	
+	sonarScan.angle_max = 0.0000017126; //see SLAM wiki
+	sonarScan.angle_increment = 0.0000017126; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
 
-	sonarScan.time_increment = 1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+	sonarScan.time_increment = (1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
 	sonarScan.range_min = 0;
 	sonarScan.range_max = RANGE;

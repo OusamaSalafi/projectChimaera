@@ -31,10 +31,10 @@ rosbuild_add_executable(sonarScanner src/sonarScanner.cpp)
 
 #-lglfw -lGL -lGLU -lX11 -lpthread -lm
 
-#target_link_libraries(sonarScanner glfw)
-#target_link_libraries(sonarScanner GL)
-#target_link_libraries(sonarScanner GLU)
-#target_link_libraries(sonarScanner X11)
-#target_link_libraries(sonarScanner pthread)
-#target_link_libraries(sonarScanner m)
+target_link_libraries(sonarScanner glfw)
+target_link_libraries(sonarScanner GL)
+target_link_libraries(sonarScanner GLU)
+target_link_libraries(sonarScanner X11)
+target_link_libraries(sonarScanner pthread)
+target_link_libraries(sonarScanner m)
 
