@@ -19,22 +19,30 @@ ros::Publisher p_yaw_left;
 
 void depth_right_cb(int pos)
 {
-	p_depth_right.publish(pos+1000);
+	std_msgs::UInt32 msg;
+	msg.data = pos+1000;
+	p_depth_right.publish(msg);
 }
 
 void depth_left_cb(int pos)
 {
-	p_depth_left.publish(pos+1000);
+	std_msgs::UInt32 msg;
+	msg.data = pos+1000;
+	p_depth_left.publish(msg);
 }
 
 void yaw_right_cb(int pos)
 {
-	p_yaw_right.publish(pos+1000);
+	std_msgs::UInt32 msg;
+	msg.data = pos+1000;
+	p_yaw_right.publish(msg);
 }
 
 void yaw_left_cb(int pos)
 {
-	p_yaw_left.publish(pos+1000);
+	std_msgs::UInt32 msg;
+	msg.data = pos+1000;
+	p_yaw_left.publish(msg);
 }
 
 int main(int argc, char **argv)
