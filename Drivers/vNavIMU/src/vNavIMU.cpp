@@ -37,6 +37,8 @@ int main(int argc, char **argv)
 	VnQuaternion quat; //quaternion struct handle
 	VnVector3 angularRate;
 	VnVector3 acceleration;
+	VnVector3 magnetic;
+	VnVector3 gyroscope;
 	
 	VnVector3 mag;		//Raw Voltage from the Magnetometer
 	VnVector3 accel;	//Raw Voltage from the Accelerometer
@@ -85,8 +87,8 @@ int main(int argc, char **argv)
 	while (ros::ok())
 	{
 
-		
-		vn100_getYawPitchRoll(&vn100, &ypr); //vectornav function
+		vn100_getYawPitchRollTrueBodyAccelerationAngularRate(&vn100, &ypr, &acceleration, &angularRate);
+		//vn100_getYawPitchRoll(&vn100, &ypr); //vectornav function
 		//printf("YPR: %+#7.2f %+#7.2f %+#7.2f\n", ypr.yaw, ypr.pitch, ypr.roll);
 		ROS_DEBUG("H: %+#7.2f P: %+#7.2f R: %+#7.2f",ypr.yaw, ypr.pitch, ypr.roll);
 		compassHeading.data = ypr.yaw;	
@@ -102,27 +104,37 @@ int main(int argc, char **argv)
 		IMU.header.frame_id = "/auv"; 
 		IMU.header.stamp = imu_time;
 		vn100_getQuaternion(&vn100 , &quat); 
+		
+		//vn100_getKalmanFilterStateVector(&vn100, &quat, &gyroscope);
 		rosQuat.x = quat.x;
 		rosQuat.y = quat.y;
 		rosQuat.z = quat.z;
 		rosQuat.w = quat.w;
 		IMU.orientation = rosQuat;
-
-		vn100_getAcceleration(&vn100, &acceleration); //check these are right
+		//printf("gyroscope - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", gyroscope.c0, gyroscope.c1, gyroscope.c2);
+		//vn100_getCalibratedImuMeasurements(&vn100, &magnetic, &acceleration, &angularRate, &temp); //try out new settings...
+		
+		
+		
+		
+		//vn100_getAcceleration(&vn100, &acceleration); //check these are right
 		rosVec_linAccel.x = acceleration.c0;
 		rosVec_linAccel.y = acceleration.c1;
 		rosVec_linAccel.z = acceleration.c2;
 		IMU.linear_acceleration = rosVec_linAccel;
-
-		vn100_getAngularRate(&vn100, &angularRate);
+		printf("Lin Acc - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", acceleration.c0, acceleration.c1, acceleration.c2);
+		
+		//vn100_getAngularRate(&vn100, &angularRate);
 		rosVec_angVel.x = angularRate.c0;
 		rosVec_angVel.y = angularRate.c1;
 		rosVec_angVel.z = angularRate.c2;			
 		IMU.angular_velocity = rosVec_angVel;
-		//printf("Angular Rate - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", angularRate.c0, angularRate.c1, angularRate.c2);
+		printf("Angular Rate - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", angularRate.c0, angularRate.c1, angularRate.c2);
+		
+
 		
 		vNavMsg.publish(IMU);
-		printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n", quat.x , quat.y , quat.z , quat.w);
+		printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n\n", quat.x , quat.y , quat.z , quat.w);
 
 
 		
