@@ -1090,17 +1090,18 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 {
 	
 	//Set Up - Might not work being done every time it's needed.:
-	
-	double sonar_frequency = 2000; //same as usleep???
-	int num_sonar_readings = 6399; //360 / (0.89 *( STEPANGLE/8)); //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
+	//11 secs when set to 32 steps, so twice as long for twice as many readings?
+	double sonar_scan_time = 22;//2000; //same as usleep???
+	//set to 16 one reading every grad, 400 grads in a circle
+	int num_sonar_readings = 400;//6399; //360 / (0.89 *( STEPANGLE/8)); //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
 	sonarScan.header.frame_id = "/base_sonar"; 
 
 	sonarScan.angle_min = 0; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
 	sonarScan.angle_max = 6.28318531; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
 	sonarScan.angle_increment = 0.0157079633;//(0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
-
-	sonarScan.time_increment = 1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+	//22secs for full scan of 400 readings so 22/400 = 0.055 
+	sonarScan.time_increment = 0.055;//1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
 	sonarScan.range_min = 0;
 	sonarScan.range_max = RANGE;
