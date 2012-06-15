@@ -11,6 +11,7 @@
 #include "image_transport/image_transport.h"
 #include "ini.h"
 #include "INIReader.h"
+#include "inifile.h"
 #include "cv_bridge/CvBridge.h"
 #include "sensor_msgs/Image.h"
 #include "std_msgs/Char.h"
@@ -130,7 +131,44 @@ public:
 		//filepath=configpath+filename
 		sprintf(file_path, "%s%s", configpath, ass);
 
-		// Read The Downcam Config File
+		/* New Reading of the Config File here...This class doesn't take default values */
+		CIniFile ini;
+		ini.Load(file_path);
+		
+		//Read the values in
+		min_hue_ = atoi(ini.GetKeyValue("hue" , "min_hue").c_str());
+		max_hue_ = atoi(ini.GetKeyValue("hue" , "max_hue").c_str());			
+		min_sat_ = atoi(ini.GetKeyValue("saturation" , "min_sat").c_str());
+		erode_passes_ = strtod(ini.GetKeyValue("erode" , "erode_passes").c_str(), NULL);		
+		dilate_passes_ = atoi(ini.GetKeyValue("dilate" , "dilate_passes").c_str());			
+		min_area_percentage_ = atoi(ini.GetKeyValue("pipe" , "min_area_percentage").c_str());
+		moving_average_size_ = atoi(ini.GetKeyValue("angle" , "moving_average_size").c_str());
+		screenshot_trigger_ = atoi(ini.GetKeyValue("counters" , "screenshot_trigger").c_str());
+		
+		//Assume that if both min and max hue = 0, then file reading failed. Setup default vals
+		if ((min_hue_ == 0) && (max_hue_ == 0))
+		{
+			std::cout << "Failed To Load \"~/projectChimaera/Config/dwncam2_config.ini\"\n";
+			min_hue_ = 4;
+			max_hue_ = 34;
+			min_sat_ = 50;
+			erode_passes_ = 10;
+			dilate_passes_ = 10;
+			min_area_percentage_ = 20;
+			moving_average_size_ = 10;
+			screenshot_trigger_ = 500;
+		}
+		
+		//Print the values out.
+		std::cout << "min_hue = " << min_hue_ << "\n";
+		std::cout << "max_hue = " << max_hue_ << "\n";
+		std::cout << "min_saturation = " << min_sat_ << "\n";
+		std::cout << "erode_passes = " << erode_passes_ << "\n";
+		std::cout << "dilation_passes = " << dilate_passes_ << "\n";
+		std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
+		std::cout << "moving_average_size = " << moving_average_size_ << "\n";
+
+		/* OLD READING OF INI FILE HERE **************************************************************
 		INIReader reader(file_path);
 		// Check The File Can Be Opened
 		if (reader.ParseError() < 0){
@@ -147,20 +185,28 @@ public:
 			// Read The Values In With Defaults Set To The Best Values Found For The Test Video
 			min_hue_ = reader.GetInteger("hue", "min_hue", 4);
 			std::cout << "min_hue = " << min_hue_ << "\n";
+			
 			max_hue_ = reader.GetInteger("hue", "max_hue", 34);
-			std::cout << "min_hue = " << max_hue_ << "\n";
+			std::cout << "max_hue = " << max_hue_ << "\n";
+
 			min_sat_ = reader.GetInteger("saturation", "min_sat", 50);
-			std::cout << "min_hue = " << min_sat_ << "\n";
+			std::cout << "min_saturation = " << min_sat_ << "\n";
+
 			erode_passes_ = (float)reader.GetInteger("erode", "erode_passes", 10);
 			std::cout << "erode_passes = " << erode_passes_ << "\n";
+
 			dilate_passes_ = reader.GetInteger("dilate", "dilate_passes", 10);
 			std::cout << "dilation_passes = " << dilate_passes_ << "\n";
+
 			min_area_percentage_ = reader.GetInteger("pipe", "min_area_percentage", 20);
 			std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
+
 			moving_average_size_ = reader.GetInteger("angle", "moving_average_size", 10);
 			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
+
 			screenshot_trigger_ = reader.GetInteger("counters", "screenshot_trigger", 500);
 		}
+		**********************************************************************************************/
 
 		//Read the location of the log file
 		logpath = getenv("SUB_LOG_PATH");
