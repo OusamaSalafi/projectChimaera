@@ -11,7 +11,8 @@
 #define MIN_AD_INTERVAL 	5
 
 #define	NUMBEROFBINS		90//200
-#define STEPANGLE		16
+//how many 1/16ths of a grad between readings 
+#define STEPANGLE		16	//1grad, 0.9 degrees
 #define MOTIME			25
 
 #define WRITEDEL		110000 //250000//

@@ -1098,7 +1098,7 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 
 	sonarScan.angle_min = 0; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
 	sonarScan.angle_max = 6.28318531; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
-	sonarScan.angle_increment = (0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+	sonarScan.angle_increment = 0.0157079633;//(0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
 
 	sonarScan.time_increment = 1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
 
