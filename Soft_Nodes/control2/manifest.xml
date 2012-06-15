@@ -1,0 +1,17 @@
+<package>
+  <description brief="control">
+
+     control
+
+  </description>
+  <author>James Taylor</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/control</url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="INIReader"/>
+
+</package>
+
+

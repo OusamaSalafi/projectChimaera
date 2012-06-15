@@ -22,7 +22,7 @@
 //              1 = VIDEO
 //              2 = IMAGE
 //              3 = IPCAM
-#define INPUT_MODE		3
+#define INPUT_MODE		1
 #define VIDEO_FILENAME	"Test.avi"
 #define IMAGE_FILENAME	"Test.jpg"
 
@@ -114,11 +114,11 @@ public:
 		max_brightness_sub_ = nh_.subscribe("vision_brightness_max", 1000, &Downcam::vision_brightness_maxCallback, this);
 
 		// Open HighGUI Windows
-		/*cv::namedWindow ("input", 1);
+		cv::namedWindow ("input", 1);
 		cv::namedWindow ("thresholded image", 1);
 		cv::namedWindow ("binary image", 1);
 		cv::namedWindow ("segmented output", 1);
-		ROS_INFO("Opened Windows");*/
+		ROS_INFO("Opened Windows");
 
 		//Read in the environmental variable that stores the location of the config files
 		char *configpath = getenv("SUB_CONFIG_PATH");
@@ -858,7 +858,7 @@ public:
 		}
 
 		// Display The Input image
-		//cv::imshow ("input", img_in_);
+		cv::imshow ("input", img_in_);
 		// Display The Thresholded Image
 		//cv::imshow ("thresholded image", img_thresh_);
 		// Display The Binary Image

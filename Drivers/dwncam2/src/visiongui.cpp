@@ -48,12 +48,16 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit
 
 	//Create track Bars
 	cvCreateTrackbar("MIN Hue","ColorSelector", &hue,179,&changeColor);
-	cvCreateTrackbar("MIN Saturation","ColorSelector", &sat,255,&changeColor);
-	cvCreateTrackbar("MIN Brightness","ColorSelector", &bri,255,&changeColor);
-
 	cvCreateTrackbar("MAX Hue","ColorSelector", &huem,179,&changeColor);
+	
+	cvCreateTrackbar("MIN Saturation","ColorSelector", &sat,255,&changeColor);
 	cvCreateTrackbar("MAX Saturation","ColorSelector", &satm,255,&changeColor);
+	
+	cvCreateTrackbar("MIN Brightness","ColorSelector", &bri,255,&changeColor);
 	cvCreateTrackbar("MAX Brightness","ColorSelector", &brim,255,&changeColor);
+
+	
+	
 
 	while (ros::ok()){
 

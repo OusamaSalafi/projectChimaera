@@ -29,6 +29,7 @@ unsigned int go = 0;
 float left;
 float right;
 
+float KP, KD, KI;
 float KPH,KDH,KIH, KPD, KDD, KID, KPP, KDP, KIP;
 
 int PLUSBUFF, MINUSBUFF;
@@ -50,3 +51,4 @@ float p(float value, float targetValue);
 float pd(float value, float targetValue);
 float pi(float value, float targetValue);
 float pid(float value, float targetValue);
+void ini_init();
