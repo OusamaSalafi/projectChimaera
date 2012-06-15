@@ -67,4 +67,12 @@ int main(int argc, char **argv)
 	cvCreateTrackbar("Yaw Left (CH3)","MotorSpammer", &yaw_right,1000,&yaw_right_cb);	
 	cvCreateTrackbar("Yaw Right (CH4)","MotorSpammer", &yaw_left,1000,&yaw_left_cb);	
 	
+
+	while (ros::ok())
+	{
+
+		// Allow The HighGUI Windows To Stay Open
+		cv::waitKey(3);
+	
+	}
 }
