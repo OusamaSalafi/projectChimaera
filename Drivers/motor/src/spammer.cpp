@@ -61,7 +61,7 @@ void go_cb(int pos)
 {
 	std_msgs::UInt32 msg;
 	msg.data = pos;
-	p_pitch.publish(msg);
+	p_go.publish(msg);
 }
 
 int main(int argc, char **argv)
@@ -97,6 +97,9 @@ int main(int argc, char **argv)
 
 		// Allow The HighGUI Windows To Stay Open
 		cv::waitKey(3);
+			std_msgs::UInt32 msg;
+			msg.data = go;
+			p_go.publish(msg);
 	
 	}
 }
