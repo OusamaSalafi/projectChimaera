@@ -23,6 +23,7 @@ int main(int argc, char **argv){
 	unsigned char once = 1;
 	
 	//call ini_init here to get variables from config file
+	ini_init();
 
 	ros::init(argc, argv, "pid");
 

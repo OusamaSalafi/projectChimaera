@@ -16,23 +16,26 @@ int main(int argc, char **argv){
 
 	/* Publish */
 
-	ros::Publisher frontMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampFront", 100);
-	ros::Publisher leftMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampLeft", 100);
-	ros::Publisher rightMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampRight", 100);
-	ros::Publisher backMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampBack", 100);
+	ros::Publisher pitchMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampPitch", 100);
+	ros::Publisher yawLMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampYawLeft", 100);
+	ros::Publisher yawRMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampYawRight", 100);
+	ros::Publisher depthRMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampDepthLeft", 100);
+	ros::Publisher depthLMsg = pidRampN.advertise<std_msgs::UInt32>("pidRampDepthRight", 100);
 
-	std_msgs::UInt32 pidRampFront;
+	std_msgs::UInt32 pidRampPitch;
 	std_msgs::UInt32 pidRampLeft;
 	std_msgs::UInt32 pidRampRight;
-	std_msgs::UInt32 pidRampBack;
+	std_msgs::UInt32 pidRampDepthL;
+	std_msgs::UInt32 pidRampDepthR;
 
 	/* Subscribe */
 
-	ros::Subscriber sub1 = pidRampN.subscribe("frontRate", 100, frontRateCallback);
+	ros::Subscriber sub1 = pidRampN.subscribe("pitchRate", 100, pitchRateCallback);
 	ros::Subscriber sub2 = pidRampN.subscribe("leftRate", 100, leftRateCallback);
 	ros::Subscriber sub3 = pidRampN.subscribe("rightRate", 100, rightRateCallback);
-	ros::Subscriber sub4 = pidRampN.subscribe("backRate", 100, backRateCallback);
-	ros::Subscriber sub5 = pidRampN.subscribe("pilotSpeed", 100, speedCallback);
+	ros::Subscriber sub4 = pidRampN.subscribe("depthRRate", 100, depthRRateCallback);
+	ros::Subscriber sub5 = pidRampN.subscribe("depthLRate", 100, depthLRateCallback);
+	ros::Subscriber sub6 = pidRampN.subscribe("pilotSpeed", 100, speedCallback);
 
 	ros::Rate loop_rate(25);
 
@@ -42,17 +45,19 @@ int main(int argc, char **argv){
 
 		ros::spinOnce();
 
-		pidRampFront.data = slewer(FRONT);
+		pidRampPitch.data = slewer(PITCH);
 		pidRampLeft.data = slewer(LEFT);
 		pidRampRight.data = slewer(RIGHT);
-		pidRampBack.data = slewer(BACK);
+		pidRampDepthL.data = slewer(DEPTHR);
+		pidRampDepthR.data = slewer(DEPTHL);
 
 		//ROS_DEBUG("F: %u L: %u R: %u B: %u",pidRampFront.data,pidRampLeft.data,pidRampRight.data,pidRampBack.data);
 
-		frontMsg.publish(pidRampFront);
-		leftMsg.publish(pidRampLeft);
-		rightMsg.publish(pidRampRight);
-		backMsg.publish(pidRampBack);
+		pitchMsg.publish(pidRampPitch);
+		yawLMsg.publish(pidRampLeft);
+		yawRMsg.publish(pidRampRight);
+		depthRMsg.publish(pidRampDepthL);
+		depthLMsg.publish(pidRampDepthR);
 
 		loop_rate.sleep();
 
@@ -65,11 +70,11 @@ int main(int argc, char **argv){
 
 
 /*************************************************
-** Get front pwm target value			**
+** Get pitch pwm target value			**
 *************************************************/
 
-void frontRateCallback(const std_msgs::Float32::ConstPtr& frontRate){
-	targetRate[FRONT] = (int)frontRate->data;
+void pitchRateCallback(const std_msgs::Float32::ConstPtr& pitchRate){
+	targetRate[PITCH] = (int)pitchRate->data;
 	return;
 }
 
@@ -92,11 +97,20 @@ void rightRateCallback(const std_msgs::Float32::ConstPtr& rightRate){
 }
 
 /*************************************************
-** Get back pwm target value			**
+** Get depth right pwm target value			**
 *************************************************/
 
-void backRateCallback(const std_msgs::Float32::ConstPtr& backRate){
-	targetRate[BACK] = (int)backRate->data;
+void depthRRateCallback(const std_msgs::Float32::ConstPtr& depthRRate){
+	targetRate[DEPTHR] = (int)depthRRate->data;
+	return;
+}
+
+/*************************************************
+** Get depth left pwm target value			**
+*************************************************/
+
+void depthLRateCallback(const std_msgs::Float32::ConstPtr& depthLRate){
+	targetRate[DEPTHL] = (int)depthLRate->data;
 	return;
 }
 
@@ -127,7 +141,7 @@ unsigned int slewer(unsigned int pos){
 	}
 	else{
 		if(targetRate[pos] > currentRate[pos]){
-			if(pos == FRONT){
+			if(pos == PITCH){
 				if((currentRate[pos] + 10) > targetRate[pos]){
 					currentRate[pos] += 1;
 				}
@@ -145,7 +159,7 @@ unsigned int slewer(unsigned int pos){
 			}
 		}
 		else if(targetRate[pos] < currentRate[pos]){
-			if(pos == FRONT){
+			if(pos == PITCH){
 				/*if((currentRate[pos] - 10) < targetRate[pos]){
 					currentRate[pos] -= 1;
 				}
