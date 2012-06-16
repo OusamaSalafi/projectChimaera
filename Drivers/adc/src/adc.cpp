@@ -23,7 +23,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::Publisher adcGoMsg = adcN.advertise<std_msgs::UInt32>("adcGo", 100);
 	std_msgs::UInt32 adcGo;
 
-	initADC();
+	//initADC();
 
 	ROS_INFO("ADC Online");
 
@@ -34,26 +34,15 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		readADC();
 
 		adcGo.data = checkGo();
-		
-		if((latch == 1) && (adcGo.data == 1)){
-			if(counter > 100){
-				adcGo.data = 2;
-				latch = 2;
-				counter = 0;
-			}
-		}
 
-		if(latch == 1){
+		if(latch == 1)
+		{
 			adcGo.data = 1;
 		}
-		if(latch == 2){
-			adcGo.data = 2;
-			if(counter > 100){
-				latch = 0;
-			}
+		if(latch == 0)
+		{
+			adcGo.data = 0;
 		}
-		printf("Latch: %u, counter: %u",latch,counter);
-		counter++;
 		adcGoMsg.publish(adcGo);
 
 		loop_rate.sleep();
@@ -65,32 +54,37 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 }
 
 unsigned int checkGo(void){
-	goTmp = (float)accRaw[GO];
-	goTmp /= ADCRES;
-	goTmp *= VREFH;
-	
-	if(goTmp >= VON){
+
+	goTmp = accRaw;
+
+	if(goTmp <= ADCTHRESH && latch == 0)
+	{
+		latch = 1;
 		ROS_DEBUG("GO!!");
-		if(latch == 0){
-			counter = 0;
-		}
-		if(latch != 2){
-			latch = 1;
-		}
-		return 1; //if we have an appropriate voltage return go
+		printf("Running.\n");
+		return 1;
 	}
-	printf("STOP!!");
-	return 0;	//else return stop
-}	
+	else if(goTmp <= ADCTHRESH && latch == 1)
+	{
+		latch = 0;
+		ROS_DEBUG("STOP!!");
+		printf("Stopped.\n");
+		return 0;
+	}
+	ROS_DEBUG("STOP!!");
+	return 0;
+
+}
 
 void readADC(void){
 
 	unsigned int val,i;
 
-	if(spi_Init(SPICLK_21400KHZ)){
+	if(spi_Init(SPICLK_21400KHZ))
+	{
 		//for(i=0;i<8;i++){
-			accRaw[GO] = adc_ReadChannel(GO, ADCMODE_RANGE_2VREF,ADCMODE_UNSIGNEDCODING);
-			//printf("Val at channel %u: is %u\n",i,accRaw[i]);
+			accRaw = adc_ReadChannel(GO, ADCMODE_RANGE_2VREF,ADCMODE_UNSIGNEDCODING);
+			//printf("Val at channel %u: is %u\n",GO,accRaw);
 		//}
 		spi_Close();
 	}
