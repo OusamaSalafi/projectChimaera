@@ -1,16 +1,6 @@
 /* Defines */
 
-#define	ZEROX	500
-#define	ZEROY	500
-#define	ZEROZ	500
-
-#define X	0
-#define	Y	1
-#define	Z	3
-#define GO	2
-
-//#define FORCE
-#define GOBUTTON
+#define GO	0
 
 #define VREFH	5000.0
 #define VREFL	2500.0
