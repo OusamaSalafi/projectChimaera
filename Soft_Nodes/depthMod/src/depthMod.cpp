@@ -17,14 +17,17 @@ int main(int argc, char **argv){
 
 	/* Publish */
 
-	ros::Publisher backMsg = depthModN.advertise<std_msgs::Float32>("backRate", 100);
+	//ros::Publisher backMsg = depthModN.advertise<std_msgs::Float32>("backRate", 100);
+	ros::Publisher depthRMsg = depthModN.advertise<std_msgs::Float32>("depthRRate", 100);
+	ros::Publisher depthLMsg = depthModN.advertise<std_msgs::Float32>("depthLRate", 100);
 
-	std_msgs::Float32 backRate;
+	std_msgs::Float32 depthRRate;
+	std_msgs::Float32 depthLRate;
 
 	/* Subscribe */
 
-	ros::Subscriber sub1 = depthModN.subscribe("backDRate", 100, depthCallback);
-	ros::Subscriber sub2 = depthModN.subscribe("backPRate", 100, pitchCallback);
+	ros::Subscriber sub1 = depthModN.subscribe("depthDRate", 100, depthCallback);
+	ros::Subscriber sub2 = depthModN.subscribe("depthPRate", 100, pitchCallback);
 
 	ros::Rate loop_rate(10);
 
@@ -34,14 +37,17 @@ int main(int argc, char **argv){
 		ros::spinOnce();
 
 		if(depthChange){
-			backRatePitch *= PITCHP;			//reduce power for pitch
-			backRate.data = backRatePitch + backRateDepth;	//combine values
+			depthRatePitch *= PITCHP;			//reduce power for pitch
+			depthRRate.data = depthRatePitch + depthRateDepth;	//combine values
+			depthLRate.data = depthRatePitch + depthRateDepth;
 		}
 		else{
-			backRate.data = backRatePitch;
+			depthRRate.data = depthRatePitch;
+			depthLRate.data = depthRatePitch;
 		}
 
-		backMsg.publish(backRate);
+		depthRMsg.publish(depthRRate);
+		depthLMsg.publish(depthLRate);
 
 		loop_rate.sleep();
 
@@ -56,9 +62,9 @@ int main(int argc, char **argv){
 ** Get what the depth is doing to the motor	**
 *************************************************/
 
-void depthCallback(const std_msgs::Float32::ConstPtr& backDRate){
-	backRateDepth = backDRate->data;
-	backRateDepth *= DEPTHP;	//power attributed to depth
+void depthCallback(const std_msgs::Float32::ConstPtr& depthDRate){
+	depthRateDepth = depthDRate->data;
+	depthRateDepth *= DEPTHP;	//power attributed to depth
 	depthChange = 1;		//raise depth flag
 	return;
 }
@@ -67,7 +73,7 @@ void depthCallback(const std_msgs::Float32::ConstPtr& backDRate){
 ** Get what the pitch is doing to the motor	**
 *************************************************/
 
-void pitchCallback(const std_msgs::Float32::ConstPtr& backPRate){
-	backRatePitch = backPRate->data;
+void pitchCallback(const std_msgs::Float32::ConstPtr& depthPRate){
+	depthRatePitch = depthPRate->data;
 	return;
 }

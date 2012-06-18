@@ -114,11 +114,11 @@ int main(int argc, char **argv){
 		
 		/* Publish */
 
-		ros::Publisher frontRateMsg = pidN.advertise<std_msgs::Float32>("frontRate", 100);
-		ros::Publisher backDRateMsg = pidN.advertise<std_msgs::Float32>("backDRate", 100);
+		ros::Publisher pitchRateMsg = pidN.advertise<std_msgs::Float32>("pitchRate", 100);
+		ros::Publisher depthDRateMsg = pidN.advertise<std_msgs::Float32>("depthDRate", 100);
 
-		std_msgs::Float32 frontRate;
-		std_msgs::Float32 backDRate;
+		std_msgs::Float32 pitchRate;
+		std_msgs::Float32 depthDRate;
 
 		/* Subscribe */
 
@@ -146,10 +146,10 @@ int main(int argc, char **argv){
 					ros::spinOnce();
 					ROS_WARN("%s waiting for go",argv[1]);
 					ros::Duration(1.0).sleep();
-					frontRate.data = 0.0;
-					backDRate.data = 0.0;
-					frontRateMsg.publish(frontRate);
-					backDRateMsg.publish(backDRate);
+					pitchRate.data = 0.0;
+					depthDRate.data = 0.0;
+					pitchRateMsg.publish(pitchRate);
+					depthDRateMsg.publish(depthDRate);
 				}
 				ROS_INFO("%s given the go",argv[1]);
 				loop_rate.sleep();
@@ -167,20 +167,20 @@ int main(int argc, char **argv){
 				tmp *= 1.0;
 			}
 
-			frontRate.data = tmp;
+			pitchRate.data = tmp;
 
-			if((targetDepth - depth) > FRONTTHRESH){	//if we are really far off target
-				backDRate.data = tmp * -0.4;			//add rear motor power
-				backDRateMsg.publish(backDRate);
+			if((targetDepth - depth) > PITCHTHRESH){	//if we are really far off target
+				depthDRate.data = tmp * -0.4;			//add rear motor power
+				depthDRateMsg.publish(depthDRate);
 			}
 			else{
-				backDRate.data = 0.0;
+				depthDRate.data = 0.0;
 			}
 							
 
-			frontRateMsg.publish(frontRate);
+			pitchRateMsg.publish(pitchRate);
 
-			ROS_DEBUG("Depth PID Front %.3f Depth Rear %.3f",frontRate.data,backDRate.data);
+			ROS_DEBUG("Depth PID Pitch %.3f Depth Rear %.3f",pitchRate.data,depthDRate.data);
 
 			loop_rate.sleep();
 
@@ -190,8 +190,8 @@ int main(int argc, char **argv){
 
 		/* Publish */
 
-		ros::Publisher backPRateMsg = pidN.advertise<std_msgs::Float32>("backPRate", 100);
-		std_msgs::Float32 backPRate;
+		ros::Publisher depthPRateMsg = pidN.advertise<std_msgs::Float32>("depthPRate", 100);
+		std_msgs::Float32 depthPRate;
 
 		/* Subscribe */
 
@@ -214,8 +214,8 @@ int main(int argc, char **argv){
 					ros::spinOnce();
 					ROS_WARN("%s waiting for go",argv[1]);
 					ros::Duration(1.0).sleep();
-					backPRate.data = 0.0;
-					backPRateMsg.publish(backPRate);
+					depthPRate.data = 0.0;
+					depthPRateMsg.publish(depthPRate);
 				}
 				ROS_INFO("%s given the go",argv[1]);
 				loop_rate.sleep();
@@ -228,15 +228,15 @@ int main(int argc, char **argv){
 
 			tmp *= -1.0f;
 
-			backPRate.data = tmp;
+			depthPRate.data = tmp;
 
-			if(backPRate.data < 0.0){	//if the nose is high
-				backPRate.data = 0.0;	//use bouyancy
+			if(depthPRate.data < 0.0){	//if the nose is high
+				depthPRate.data = 0.0;	//use bouyancy
 			}
 
-			backPRateMsg.publish(backPRate);
+			depthPRateMsg.publish(depthPRate);
 
-			ROS_DEBUG("Pitch PID Back %.3f",backPRate.data);
+			ROS_DEBUG("Pitch PID Back %.3f",depthPRate.data);
 
 			loop_rate.sleep();
 
