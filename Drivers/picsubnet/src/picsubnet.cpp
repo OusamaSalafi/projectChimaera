@@ -22,6 +22,8 @@ int writePos = 0;     /*Write position in fifoBuffer */
 std_msgs::Char reed_status;
 std_msgs::Float32 battery_voltage1;
 std_msgs::Float32 battery_voltage2;
+std_msgs::Float32 battery_voltage3;
+std_msgs::Float32 battery_voltage4;
 
 /*********************************
 ** Generates an NMEA checksum	**
@@ -150,6 +152,16 @@ void msgSearch()
 				//printf("Battery 2: %sV\n", word.c_str());
 				battery_voltage2.data = (float)strtod(word.c_str(), NULL);
 			}
+			else if (index == 3)
+			{
+				//printf("Battery 2: %sV\n", word.c_str());
+				battery_voltage3.data = (float)strtod(word.c_str(), NULL);
+			}
+			else if (index == 4)
+			{
+				//printf("Battery 2: %sV\n", word.c_str());
+				battery_voltage4.data = (float)strtod(word.c_str(), NULL);
+			}
 			index++;
 		    }	
 		}
@@ -179,21 +191,25 @@ char read_port(void){
 	char returnBuffer[255]; 		/*Buffer which stores read data*/
 	int retval = read(fd,returnBuffer,sizeof(returnBuffer));
 	char *bufPos;
+	char msgFound = 0;
 
 	bufPos = &returnBuffer[0];
 	for (int i = 0; i < retval; i++)
 	{
 		/* Write to our fifo buffer */
 		fifoBuffer[writePos] = bufPos[i];
-
+		//printf("%c",bufPos[i]);
 		/* Search for messages */
-		if (fifoBuffer[writePos] == 10) msgSearch();
-
+		if (fifoBuffer[writePos] == 10)
+		{
+			msgSearch();
+			msgFound = 1;
+		}
 		/* Get the next write pos */
 		writePos = (writePos + 1) % 255;
 	}
 
-	return (retval > 0);
+	return (msgFound);
 }
 
 /*********************************
@@ -253,6 +269,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::Publisher pubReedSwitch = picsubnetN.advertise<std_msgs::Char>("reed_switch", 100);
 	ros::Publisher pubBatteryVoltage1 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_1", 100); 
 	ros::Publisher pubBatteryVoltage2 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_2", 100);
+	ros::Publisher pubBatteryVoltage3 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_3", 100); 
+	ros::Publisher pubBatteryVoltage4 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_4", 100);
 
 	ros::Rate loop_rate(15); //how many times a second (i.e. Hz) the code should run
 
@@ -274,6 +292,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 			pubReedSwitch.publish(reed_status);
 			pubBatteryVoltage1.publish(battery_voltage1);
 			pubBatteryVoltage2.publish(battery_voltage2);
+			pubBatteryVoltage3.publish(battery_voltage3);
+			pubBatteryVoltage4.publish(battery_voltage4);
 		}
 
 		/*Have a snooze*/
