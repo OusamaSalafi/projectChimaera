@@ -25,16 +25,18 @@ provided.
 
 #include "ros/ros.h"
 #include "std_msgs/Int32.h"
+#include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 
 
 
 void xCallback(const std_msgs::Int32::ConstPtr& logX);
 void yCallback(const std_msgs::Int32::ConstPtr& logY);
-void zCallback(const std_msgs::Int32::ConstPtr& logZ);
+void zCallback(const std_msgs::Float32::ConstPtr& svpDepth);
 void aCallback(const std_msgs::String::ConstPtr& logAction);
 
-int x, y, z;
+int x, y;
+float z;
 char aa[100];
 
 using namespace std;
@@ -51,10 +53,17 @@ int main(int argc, char **argv)
 	//Set up subscriptions
 	ros::Subscriber sub1 = n.subscribe("logX", 100, xCallback);
 	ros::Subscriber sub2 = n.subscribe("logY", 100, yCallback);
-	ros::Subscriber sub3 = n.subscribe("logZ", 100, zCallback);
+	ros::Subscriber sub3 = n.subscribe("svpDepth", 100, zCallback);
 	ros::Subscriber sub4 = n.subscribe("logAction", 100, aCallback);
+	
+	char tmpName[100];
+	
+	char buff[20];
+	time_t now = time(NULL);
+	strftime(buff, 20, "%Y-%m-%d %H:%M:%S", localtime(&now));
+	printf("%s\n", buff);
 		
-	ofstream logFile ("/home/alex/projectChimaera/log.txt");
+	ofstream logFile ("/home/alex/projectChimaera/Logs/log.txt");
 
 	ros::spinOnce();
 
@@ -115,9 +124,13 @@ void yCallback(const std_msgs::Int32::ConstPtr& logY)
 ** Returns the depth (Z)
 *************************************************/
 
-void zCallback(const std_msgs::Int32::ConstPtr& logZ)
+void zCallback(const std_msgs::Float32::ConstPtr& svpDepth)
 {
-	z = logZ->data;
+	//1 decibar = 1.019716 meters
+	
+	//convert from milibar to decibar and times by meters per decibar.
+	z = (100 * svpDepth->data) * 1.019716;
+		
 	return;
 }
 /*************************************************
