@@ -9,6 +9,8 @@
 
 #include "motor.h"
 
+#define SLEEPTIME 2500
+
 //#define DEBUG
 //#define RELEASE
 //int go = 0;
@@ -21,6 +23,33 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	int counter = 100;
 	int i = 0;
 
+	if(argv[1] == "test")
+	{
+	while(1)
+	{
+		for(j = 2; j <7; j ++)
+		{
+	
+			for(i = 0; i < 500; i ++)
+			{
+			
+				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				updatePWM(j, 1600);
+				usleep(SLEEPTIME);
+				printf("Channel %d\n", j);	
+				
+			}
+		}	
+		
+	}
+	}
+	else if(argv[1] == "go")
+	{
 	while(1)
 	{
 	
@@ -69,7 +98,12 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	
 	
 	}
-
+	}
+	else
+	{
+		printf("args are test or go\n");
+	}
+		
 	updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 	updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 	updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);

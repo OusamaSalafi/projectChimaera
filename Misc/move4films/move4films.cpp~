@@ -9,6 +9,8 @@
 
 #include "motor.h"
 
+#define SLEEPTIME 2500
+
 //#define DEBUG
 //#define RELEASE
 //int go = 0;
@@ -23,7 +25,31 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 
 	while(1)
 	{
+		for(j = 2; j <7; j ++)
+		{
 	
+			for(i = 0; i < 500; i ++)
+			{
+			
+				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				updatePWM(j, 1600);
+				usleep(SLEEPTIME);
+				printf("Channel %d\n", j);	
+				
+			}
+		}	
+		
+	}
+
+	while(1)
+	{
+	
+		readADC();
 		while(go)
 		{
 		
@@ -67,28 +93,6 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		}
 	
 	
-	}
-
-	/*while(strcmp(e,"Y")){
-		printf("Would you like to end? Y to end\n");
-		scanf("%s",&e);
-	}*/
-	while(counter){
-		printf("%d Loops Remain\n",counter);
-		if(!strcmp(c,"left")){
-			updatePWM(LEFT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"right")){
-			updatePWM(RIGHT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"fwd")){
-			updatePWM(FRONT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"back")){
-			updatePWM(BACK_MOTOR_CHANNEL, speed);
-		}
-		counter--;
-		usleep(10000);
 	}
 
 	updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
