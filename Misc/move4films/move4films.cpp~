@@ -4,8 +4,8 @@
 #include <unistd.h>
 
 #include "../../Roboard/roboard.h"
-#include "pwm.h"
-#include "ad79x8.h"
+#include "../../Roboard/pwm.h"
+#include "../../Roboard/ad79x8.h"
 
 #include "motor.h"
 
@@ -34,7 +34,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US + i);
 				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				printf("1 - Turning\n");	
 				
 			}
 			for(i = 0; i < 50; i ++)
@@ -46,6 +48,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
 				
+				printf("2 - Down\n");
+				
 			}
 			for(i = 0; i < 500; i ++)
 			{
@@ -54,7 +58,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US - i);
 				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				printf("3 - Turning\n");	
 				
 			}		
 		
@@ -192,6 +198,7 @@ void readADC(void){
 	{
 	
 		go = 1;
+		printf("Go Forth!\n");
 	
 	}
 	

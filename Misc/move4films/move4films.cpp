@@ -24,6 +24,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	while(1)
 	{
 	
+		readADC();
 		while(go)
 		{
 		
@@ -34,7 +35,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US + i);
 				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				printf("1 - Turning\n");	
 				
 			}
 			for(i = 0; i < 50; i ++)
@@ -46,6 +49,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
 				
+				printf("2 - Down\n");
+				
 			}
 			for(i = 0; i < 500; i ++)
 			{
@@ -54,35 +59,15 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US - i);
 				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				
+				printf("3 - Turning\n");	
 				
 			}		
 		
 		}
 	
 	
-	}
-
-	/*while(strcmp(e,"Y")){
-		printf("Would you like to end? Y to end\n");
-		scanf("%s",&e);
-	}*/
-	while(counter){
-		printf("%d Loops Remain\n",counter);
-		if(!strcmp(c,"left")){
-			updatePWM(LEFT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"right")){
-			updatePWM(RIGHT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"fwd")){
-			updatePWM(FRONT_MOTOR_CHANNEL, speed);
-		}
-		else if(!strcmp(c,"back")){
-			updatePWM(BACK_MOTOR_CHANNEL, speed);
-		}
-		counter--;
-		usleep(10000);
 	}
 
 	updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
@@ -192,6 +177,7 @@ void readADC(void){
 	{
 	
 		go = 1;
+		printf("Go Forth!\n");
 	
 	}
 	
