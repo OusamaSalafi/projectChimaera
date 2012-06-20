@@ -21,8 +21,10 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	char c[100],s[100],e[100];
 	unsigned int speed;
 	int counter = 100;
-	int i = 0;
+	int i = 0, j = 0;
 
+	if(argv[1] == "test")
+	{
 	while(1)
 	{
 		for(j = 2; j <7; j ++)
@@ -45,7 +47,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		}	
 		
 	}
-
+	}
+	else if(argv[1] == "go")
+	{
 	while(1)
 	{
 	
@@ -94,7 +98,12 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	
 	
 	}
-
+	}
+	else
+	{
+		printf("args are test or go\n");
+	}
+		
 	updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 	updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 	updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
