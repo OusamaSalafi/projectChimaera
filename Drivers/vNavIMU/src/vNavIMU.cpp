@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 	geometry_msgs::Vector3 rosVec_angVel;
 	geometry_msgs::Vector3 rosVec_linAccel;
 
-	ros::Time imu_time = ros::Time::now();
+	//ros::Time imu_time = ros::Time::now();
 	
 	ros::Rate loop_rate(LOOP_RATE);
 
@@ -87,7 +87,9 @@ int main(int argc, char **argv)
 	while (ros::ok())
 	{
 
-		vn100_getYawPitchRollTrueBodyAccelerationAngularRate(&vn100, &ypr, &acceleration, &angularRate);
+		ros::Time imu_time = ros::Time::now();
+		//vn100_getYawPitchRollTrueBodyAccelerationAngularRate
+		vn100_getYawPitchRollTrueInertialAcclerationAngularRate(&vn100, &ypr, &acceleration, &angularRate);
 		//vn100_getYawPitchRoll(&vn100, &ypr); //vectornav function
 		//printf("YPR: %+#7.2f %+#7.2f %+#7.2f\n", ypr.yaw, ypr.pitch, ypr.roll);
 		ROS_DEBUG("H: %+#7.2f P: %+#7.2f R: %+#7.2f",ypr.yaw, ypr.pitch, ypr.roll);
