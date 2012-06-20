@@ -5,7 +5,7 @@
 #define	MINSPEEDH	-50.0
 #define MAXVAL		50.0
 #define MINVAL		-50.0
-#define FRONTTHRESH	0.8
+#define PITCHTHRESH	0.8
 
 #define PLUSBUFFH	5.0
 #define	MINUSBUFFH	-5.0

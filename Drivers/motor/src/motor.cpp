@@ -28,6 +28,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::NodeHandle motorN;
 
 	/* Publish */
+	ros::Publisher motorDirectionMsg = motorN.advertise<std_msgs::UInt32("motorDirection", 100);
+	
+	std_msgs::UInt32 motorDir;
 
 	/* Subscribe */
 
@@ -53,7 +56,20 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 			loop_rate.sleep();
 			once = 0;
 		}
+		
+		//Add together the left and right values, divide them by stationary motors (1500 * 2), 
+		//	if less than 1 it's going backwards, if more than 1 it's going forwards.
+		//	Otherwise it's turning. 
+		if( ((float(yawLeftPWM) + float(yawRightPWM)) / 3000.0) > 1.0 )	//Forwards
+			motorDir.data = 1;
+		else if( ((float(yawLeftPWM) + float(yawRightPWM)) / 3000.0) < 1.0 )	//Backwards
+			motorDir.data = -1;	
+		else									//Turning on the spot or stationary.
+			motorDir.data = 0;
+
+		motorDirectionMsg.publish(motorDir);
 		ros::spin();
+		
 	}
 
 	updatePWM(DEPTH_RIGHT_CHANNEL, 	ZERO_DUTY_CYCLE_US);

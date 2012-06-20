@@ -4,6 +4,8 @@
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
+#define ACCXTHRESH 0.05
+#define ACCYTHRESH 0.05
   
   
   geometry_msgs::Quaternion orient;
@@ -55,23 +57,25 @@ int main(int argc, char** argv){
   int calCount = 0;
   int velCount = 0;
   int Count = 0;
-  
+  char directionSetX = 0;
+  char directionSetY = 0;
   bool calibrated = false;
 
 
   ros::Time current_time, last_time;
   current_time = ros::Time::now();
   last_time = ros::Time::now();
-  printf("Calibrating...");
+
   ros::Rate r(100.0);
   while(n.ok()){
   	
     if ((calCount <= 100) && (calibrated == false)){
   	calAccx += accx;
   	calAccy += accy;
-  	calCount += 1;
+  	calCount += 1;  
+  	printf("Calibrating...\n");
   	
-  	} else {
+  	} else if (calibrated == false) {
   	calibrated = true;
   	calAccx = calAccx / 100;
   	calAccy = calAccy / 100;
@@ -90,14 +94,33 @@ int main(int argc, char** argv){
     accx = linAcc.x;
     accy = linAcc.y;
     accth = linAcc.z;
+    if ((accx < ACCXTHRESH) && (accx > -ACCXTHRESH)){
+    accx = 0;
+    prevVelx = 0;    
+    directionSetX = 0;
+    } else if (accx > ACCXTHRESH) {
+    accx = accx -ACCXTHRESH;
+    } else if (accx < -ACCXTHRESH) {
+    accx = accx +ACCXTHRESH;
+    }
     
-    if ((accx > 0.00) && (accx < 0.05)){
+    if ((accy < ACCYTHRESH) && (accy > -ACCYTHRESH)){
+    accy = 0;
+    prevVely = 0;
+    directionSetY = 0;
+    } else if (accy > ACCYTHRESH) {
+    accy = accy -ACCYTHRESH;
+    } else if (accy < -ACCYTHRESH) {
+    accy = accy +ACCYTHRESH;
+    }
+    
+    /*if ((accx < -0.01) || (accx == 0.0)){
     //accx = 0;
     prevVelx = 0;
      
     }
     
-    if ((accy > 0.0) && (accy < 0.06)){
+    if ((accy > -0.02) && (accy < 0.02)){
     //accx = 0;
     prevVely = 0;
      
@@ -113,30 +136,77 @@ int main(int argc, char** argv){
     //accy = 0;
     prevVely = 0;
     }*/
-    
-    deltavx += prevVelx + (accx * dt);// Velocity in X
-    deltavy += prevVely + (accy * dt);// Velocity in Y
-    vth = angVel.z;
+       if (Count == 100){
+    Count = 0;
+    prevVelx = 0;
+    prevVely = 0;
+    //printf("10");
+    } else {
+    Count += 1;
+    }
     velCount += 1;
+
+    vx = prevVelx + (accx * dt);// Velocity in X
+    vy = prevVely + (accy * dt);// Velocity in Y
+    vth = angVel.z;
     
-    
-    if (velCount == 3){
+    /*if (velCount == 3){
     velCount = 0;
     vx = deltavx / 3;
     vy = deltavy / 3;
     deltavx = 0;
     deltavy = 0;
+    }*/
+    if (vx == prevVelx){
+    vx = 0;
+
+    }
+    if (vy == prevVely){
+    vy = 0;
     }
     
-    /*if (Count == 101){
-    Count = 0;
-    prevVelx = 0;
-    prevVely = 0;
+    if ((prevVelx > 0) && (vx > prevVelx))
+    {
+    directionSetX = 1;
+    } else if ((prevVelx < 0) && (vx < prevVelx)) 
+    {
+    directionSetX = -1;
     }
-    Count += 1;*/
+    
+    
+    if ((directionSetX == 1) && (vx < 0)){
+    vx = vx * -1;
+    } 
+    if ((directionSetX == -1) && (vx > 0)){
+    vx = vx * -1;
+    }
+    
+        if ((prevVely > 0) && (vy > prevVely))
+    {
+    directionSetY = 1;
+    } else if ((prevVely < 0) && (vy < prevVely)) 
+    {
+    directionSetY = -1;
+    }
+    
+    
+    if ((directionSetY == 1) && (vy < 0)){
+    vy = vy * -1;
+    } 
+    if ((directionSetY == -1) && (vy > 0)){
+    vy = vy * -1;
+    }
+
+
+
+    
+
+    
+
+
     
     printf("T = %f \n", dt);
-    printf("X velocity = %+#7.3f \n", vx);   
+    printf("X velocity = %+#7.2f \n", vx);   
     printf("Y velocity = %+#7.2f \n", vy);
     printf("angular velocity = %+#7.2f\n\n", vth);
     
@@ -172,7 +242,7 @@ int main(int argc, char** argv){
     
 
     
-    printf("X = %+#7.3f \n", x);
+    printf("X = %+#7.2f \n", x);
     printf("Y = %+#7.2f \n", y);
     printf("Th = %+#7.2f\n\n", th);
 
