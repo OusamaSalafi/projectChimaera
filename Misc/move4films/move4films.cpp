@@ -16,12 +16,14 @@
 //int go = 0;
 unsigned int accRaw[8];
 
+void readADC(void);
+
 int main(int argc, char **argv){ //we need argc and argv for the rosInit function
 
 	char c[100],s[100],e[100];
 	unsigned int speed;
 	int counter = 100;
-	int i = 0;
+	int i = 0, j = 0;
 
 	if(argv[1] == "test")
 	{
