@@ -168,46 +168,6 @@ public:
 		std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
 		std::cout << "moving_average_size = " << moving_average_size_ << "\n";
 
-		/* OLD READING OF INI FILE HERE **************************************************************
-		INIReader reader(file_path);
-		// Check The File Can Be Opened
-		if (reader.ParseError() < 0){
-			std::cout << "Failed To Load \"~/projectChimaera/Config/dwncam2_config.ini\"\n";
-			min_hue_ = 4;
-			max_hue_ = 34;
-			min_sat_ = 50;
-			erode_passes_ = 10;
-			dilate_passes_ = 10;
-			min_area_percentage_ = 20;
-			moving_average_size_ = 10;
-			screenshot_trigger_ = 500;
-		} else{
-			// Read The Values In With Defaults Set To The Best Values Found For The Test Video
-			min_hue_ = reader.GetInteger("hue", "min_hue", 4);
-			std::cout << "min_hue = " << min_hue_ << "\n";
-			
-			max_hue_ = reader.GetInteger("hue", "max_hue", 34);
-			std::cout << "max_hue = " << max_hue_ << "\n";
-
-			min_sat_ = reader.GetInteger("saturation", "min_sat", 50);
-			std::cout << "min_saturation = " << min_sat_ << "\n";
-
-			erode_passes_ = (float)reader.GetInteger("erode", "erode_passes", 10);
-			std::cout << "erode_passes = " << erode_passes_ << "\n";
-
-			dilate_passes_ = reader.GetInteger("dilate", "dilate_passes", 10);
-			std::cout << "dilation_passes = " << dilate_passes_ << "\n";
-
-			min_area_percentage_ = reader.GetInteger("pipe", "min_area_percentage", 20);
-			std::cout << "min_area_percentage = " << min_area_percentage_ << "\n";
-
-			moving_average_size_ = reader.GetInteger("angle", "moving_average_size", 10);
-			std::cout << "moving_average_size = " << moving_average_size_ << "\n";
-
-			screenshot_trigger_ = reader.GetInteger("counters", "screenshot_trigger", 500);
-		}
-		**********************************************************************************************/
-
 		//Read the location of the log file
 		logpath = getenv("SUB_LOG_PATH");
 		if (logpath == NULL)
@@ -215,6 +175,8 @@ public:
 		std::cout << "Problem getting SUB_LOG_PATH variable." << std::endl;
 		exit(-1);
 		}
+
+		sprintf(savepath, "%s%s", logpath, "/dwncam_images"); 
 
 		//start the screenshot counter
 		screenshot_counter_ = 0;
@@ -493,7 +455,10 @@ public:
 			return;	
 	}
 
-
+	int map(long x, long in_min, long in_max, long out_min, long out_max)
+	{
+		return (int)((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+	}
 
 	// Image Callback Function
 	void imageCallback(const sensor_msgs::ImageConstPtr & msg_ptr)
@@ -880,6 +845,10 @@ public:
 				//counter will only be 0 once, so we will always getr an image saved of the
 				//first contact with the pipe
 				screenshot_counter_++;
+				//normalise the coordinates to 0->200
+				//normalise coordinates from image size to -100 -> +100
+			    pipe_centre_.x = map(pipe_centre_.x, 0, img_in_.cols, 0, 200);
+				pipe_centre_.y = map(pipe_centre_.y, 0, img_in_.rows, 0, 200);
 				// Publish The Centre X, Centre Y, Z Distance & Angle To ROS
 				//X 
 				pipe_X_.data = pipe_centre_.x; 

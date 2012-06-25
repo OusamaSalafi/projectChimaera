@@ -19,7 +19,7 @@ int satm = 127;
 int brim = 127;
 
 //
-char* ass = "fwdcam_config.ini";
+char* ass = "dwncam2_config.ini";
 char file_path[300];
 
 //Callback function for trackbars
@@ -30,6 +30,8 @@ void changeColor(int pos)
 int main(int argc, char **argv){ //we need argc and argv for the rosInit 
 
 	ros::init(argc, argv, "visiongui");	//Initialize the node
+
+
 
 	//Our node handle
 	ros::NodeHandle visionguiN;	
@@ -68,13 +70,13 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit
 	int lbm = brim;
 
 	/*Advertises our various messages*/
-	ros::Publisher p_hue = visionguiN.advertise<std_msgs::Char>("vision_hue_min", 100);
-	ros::Publisher p_sat = visionguiN.advertise<std_msgs::Char>("vision_saturation_min", 100); 
-	ros::Publisher p_bri = visionguiN.advertise<std_msgs::Char>("vision_brightness_min", 100);
+	ros::Publisher p_hue = visionguiN.advertise<std_msgs::Char>("fwdcam_hue_min", 100);
+	ros::Publisher p_sat = visionguiN.advertise<std_msgs::Char>("fwdcam_saturation_min", 100); 
+	ros::Publisher p_bri = visionguiN.advertise<std_msgs::Char>("fwdcam_brightness_min", 100);
 	
-	ros::Publisher p_huem = visionguiN.advertise<std_msgs::Char>("vision_hue_max", 100);
-	ros::Publisher p_satm = visionguiN.advertise<std_msgs::Char>("vision_saturation_max", 100); 
-	ros::Publisher p_brim = visionguiN.advertise<std_msgs::Char>("vision_brightness_max", 100);
+	ros::Publisher p_huem = visionguiN.advertise<std_msgs::Char>("fwdcam_hue_max", 100);
+	ros::Publisher p_satm = visionguiN.advertise<std_msgs::Char>("fwdcam_saturation_max", 100); 
+	ros::Publisher p_brim = visionguiN.advertise<std_msgs::Char>("fwdcam_brightness_max", 100);
 	
 	//Create window
 	cvNamedWindow("ColorSelector",0);
