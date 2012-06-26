@@ -125,6 +125,7 @@ void pixelPlace( float theta, unsigned int distance, unsigned int depth )
 {
 
 	float x, y;
+	theta /= 17.7777778;
 	if( theta > 0 && theta < 90 )
 	{
 

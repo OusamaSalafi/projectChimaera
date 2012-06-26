@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle n;
 
 	//Publish
-	ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("array", 100);
+	ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("sonarPCarray", 100);
 
 	ros::Subscriber sub1 = n.subscribe("sonarBearing", 100, bearingCB);
 	ros::Subscriber sub2 = n.subscribe("sonarBinsArr", 100, binsArrCB);

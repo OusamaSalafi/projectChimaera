@@ -25,16 +25,16 @@ int main( int argc, char** argv )
 
 	//Publish
 	//ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-	ros::Publisher pub = n.advertise<PointCloud> ("tactip", 100);	
+	ros::Publisher pub = n.advertise<PointCloud> ("sonarPC", 100);	
 
 	//Subscribe
-	ros::Subscriber sub3 = n.subscribe("array", 100, arrayCallback);
+	ros::Subscriber sub3 = n.subscribe("sonarPCarray", 100, arrayCallback);
 
 	//Set loop rate (times per second)
 	ros::Rate r(30);
 
 	PointCloud::Ptr msg (new PointCloud);
-	msg->header.frame_id = "gpc_frame";
+	msg->header.frame_id = "base_sonar";
 	msg->height = 1;
 	msg->width = MAX_POINTS;
 	msg->points.resize (msg->width * msg->height);

@@ -7,7 +7,7 @@
 #include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/Float32MultiArray.h"
 
-#define MAX_POINTS 9999
+#define MAX_POINTS 20000
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
@@ -25,7 +25,7 @@ int main( int argc, char** argv )
 
 	//Publish
 	//ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-	ros::Publisher pub = n.advertise<PointCloud> ("tactip", 100);	
+	ros::Publisher pub = n.advertise<PointCloud> ("sonarPC", 100);	
 
 	//Subscribe
 	ros::Subscriber sub3 = n.subscribe("array", 100, arrayCallback);
@@ -34,7 +34,7 @@ int main( int argc, char** argv )
 	ros::Rate r(30);
 
 	PointCloud::Ptr msg (new PointCloud);
-	msg->header.frame_id = "gpc_frame";
+	msg->header.frame_id = "base_sonar";
 	msg->height = 1;
 	msg->width = MAX_POINTS;
 	msg->points.resize (msg->width * msg->height);
