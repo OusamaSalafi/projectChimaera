@@ -1,0 +1,6 @@
+<launch>
+	<!--	DISPLAY NAME	NODE NAME	RUN NAME	ARGUMENTS	-->
+	<node name="Scanner"	pkg="sonar"	type="sonar"	/>
+	<node name="Injector"	pkg="sonarInjector"	type="sonarInjector"	/>
+	<node name="Pointcloud"	pkg="sonarPointCloud"	type="sonarPointCloud"	/>
+</launch>

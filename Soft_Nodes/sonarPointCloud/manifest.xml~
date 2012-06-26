@@ -1,0 +1,17 @@
+<package>
+  <description brief="sonarPointCloud">
+
+     sonarPointCloud
+
+  </description>
+  <author>Alex</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sonarPointCloud</url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="pcl"/>
+
+</package>
+
+
