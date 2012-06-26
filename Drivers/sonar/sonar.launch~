@@ -5,7 +5,7 @@
 	<node name="Pointcloud"	pkg="sonarPointCloud"	type="sonarPointCloud"	/>
 	
 	<!-- fake laser -->
-  	<node pkg="nodelet" type="nodelet" name="sonarToLaser" args="load pointcloud_to_laserscan/CloudToScan sonarPointCloud">
+  	<node pkg="nodelet" type="nodelet" name="sonarToLaser" args="load pointcloud_to_laserscan/CloudToScan sonarPC">
     		<param name="sonar_frame_id" value="/base_sonar"/>
     		<remap from="cloud" to="cloud_throttled"/>
   	</node>
