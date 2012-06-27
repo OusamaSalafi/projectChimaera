@@ -85,16 +85,31 @@ unsigned int checkGo(void){
 
 void readADC(void){
 
-	unsigned int val,i;
+        unsigned int val,i;
+        float gotmp;
 
-	if(spi_Init(SPICLK_21400KHZ)){
-		//for(i=0;i<8;i++){
-			accRaw[GO] = adc_ReadChannel(GO, ADCMODE_RANGE_2VREF,ADCMODE_UNSIGNEDCODING);
-			//printf("Val at channel %u: is %u\n",i,accRaw[i]);
-		//}
-		spi_Close();
-	}
-	return; 
+        if(spi_Init(SPICLK_21400KHZ))
+        {
+                //for(i=0;i<8;i++){
+                        accRaw[0] = adc_ReadChannel(0, ADCMODE_RANGE_2VREF,ADCMODE_UNSIGNEDCODING);
+                        //printf("Val at channel %u: is %u\n",i,accRaw[i]);
+                //}
+                spi_Close();
+        }
+        gotmp = accRaw[0];
+        gotmp /= 1023.0;
+        gotmp *= 5000.0;
+
+        if(gotmp <= 200.0)
+        {
+        
+                go = 1;
+                printf("Go Forth!\n");
+
+        }
+
+        return; 
 }
+
 
 
