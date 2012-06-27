@@ -60,9 +60,9 @@ int main(int argc, char **argv)
 			array.data.push_back(imgy);	//y
 			array.data.push_back(0.0);	//z
 
-			array.data.push_back(imgz);	//r
-			array.data.push_back(0.0);	//g
-			array.data.push_back(0.0);	//b
+			array.data.push_back(imgz);	//i
+			//array.data.push_back(0.0);	//g
+			//array.data.push_back(0.0);	//b
 
 			//Publish array
 			pub.publish(array);
@@ -134,8 +134,8 @@ void pixelPlace( float theta, unsigned int distance, unsigned int depth )
 		x = (float)distance * cos( theta *PI/180);
 		y = (float)distance * sin( theta *PI/180);
 		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ( (float) WIDTH / 2.0) ;
-		imgy = (y * -1)+ ( (float) HEIGHT / 2.0);
+		imgx = x;// + ( (float) WIDTH / 2.0) ;
+		imgy = (y * -1);//+ ( (float) HEIGHT / 2.0);
 
 	}
 	else if( theta > 91 && theta < 180 )
@@ -144,8 +144,8 @@ void pixelPlace( float theta, unsigned int distance, unsigned int depth )
 		y = (float)distance * cos(theta *PI/180);
 		x = (float)distance * sin(theta *PI/180);
 		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + (WIDTH / 2);
-		imgy = (y * -1) + (HEIGHT / 2);		
+		imgx = x;// + (WIDTH / 2);
+		imgy = (y * -1);// + (HEIGHT / 2);		
 
 	}
 	else if( theta > 181 && theta < 270 )
@@ -156,8 +156,8 @@ void pixelPlace( float theta, unsigned int distance, unsigned int depth )
 		x = (float)distance * cos(theta *PI/180);
 		y = (float)distance * sin(theta *PI/180);		
 		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ((float)WIDTH / 2);
-		imgy = (y * -1) + ((float)HEIGHT / 2);
+		imgx = x;// + ((float)WIDTH / 2);
+		imgy = (y * -1);// + ((float)HEIGHT / 2);
 
 	}
 	else
@@ -166,8 +166,8 @@ void pixelPlace( float theta, unsigned int distance, unsigned int depth )
 		y = (float)distance * cos(theta *PI/180);
 		x = (float)distance * sin(theta *PI/180);		
 		//printf("%f = %f -- %f\n",theta, x, y);
-		imgx = x + ((float)WIDTH / 2);
-		imgy = (y * -1) + ((float)HEIGHT / 2);
+		imgx = x;// + ((float)WIDTH / 2);
+		imgy = (y * -1);// + ((float)HEIGHT / 2);
 	}
 
 	//imageArray[y][x] = 1;

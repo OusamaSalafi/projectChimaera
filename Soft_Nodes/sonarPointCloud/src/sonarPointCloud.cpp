@@ -48,26 +48,37 @@ int main( int argc, char** argv )
 
 		for(int i = 0; i < 90; i ++)
 		{
-			x = Arr[0+(i*6)];
-			y = Arr[1+(i*6)];
-			z = Arr[2+(i*6)];
 			//don't add another point if it's the same as the last one. This should reduce the amount of memory wasted.
 			//if(x != lock_x || y != lock_y || z != lock_z)
 			//{
 				//ROS_INFO("%d = x: %f, y: %f, z: %f, r: %d, g: %d, b: %d",counter, x, y, z, int(Arr[3]), int(Arr[4]), int(Arr[5]));
 
-				msg->points[counter].x = lock_x = x;	
-				msg->points[counter].y = lock_y = y;	
-				msg->points[counter].z = lock_z = z;
-	
-				msg->points[counter].intensity = int(Arr[3+(i*6)]);
-				//msg->points[counter].g = int(Arr[4+(i*6)]);
-				//msg->points[counter].b = int(Arr[5+(i*6)]);
 
-				msg->header.stamp = ros::Time::now ();
-				pub.publish(msg);
+				if( (i>=10) && (Arr[3+(i*4)] >= 90.0) )
+				{
+					x = Arr[0+(i*4)];
+					z = Arr[1+(i*4)];
+					y = Arr[2+(i*4)];
 
-				counter ++;
+					msg->points[counter].x = lock_x = x;	
+					msg->points[counter].y = lock_y = y;	
+					msg->points[counter].z = lock_z = z;
+				
+					//printf("%f \n", Arr[3+(i*4)]);
+
+					msg->points[counter].intensity = Arr[3+(i*4)];
+					//msg->points[counter].g = int(Arr[4+(i*6)]);
+					//msg->points[counter].b = int(Arr[5+(i*6)]);
+
+					msg->header.stamp = ros::Time::now ();
+				
+					pub.publish(msg);
+					counter ++;
+					i = 90;
+				}
+				
+				//pub.publish(msg);
+
 			//}
 
 		}
