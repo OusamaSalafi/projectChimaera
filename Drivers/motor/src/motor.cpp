@@ -1,5 +1,9 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "ros/ros.h"
 #include "std_msgs/UInt32.h"
+#include "std_msgs/Int32.h"
 
 #include "roboard.h"
 #include "pwm.h"
@@ -28,9 +32,9 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::NodeHandle motorN;
 
 	/* Publish */
-	ros::Publisher motorDirectionMsg = motorN.advertise<std_msgs::UInt32("motorDirection", 100);
+//	ros::Publisher pub = motorN.advertise<std_msgs::Int32("motorDirection", 100);
 	
-	std_msgs::UInt32 motorDir;
+//	std_msgs::Int32 motorDir;
 
 	/* Subscribe */
 
@@ -60,14 +64,15 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		//Add together the left and right values, divide them by stationary motors (1500 * 2), 
 		//	if less than 1 it's going backwards, if more than 1 it's going forwards.
 		//	Otherwise it's turning. 
-		if( ((float(yawLeftPWM) + float(yawRightPWM)) / 3000.0) > 1.0 )	//Forwards
-			motorDir.data = 1;
+/*		if( ((float(yawLeftPWM) + float(yawRightPWM)) / 3000.0) > 1.0 )	//Forwards
+//			motorDir.data = 1;
 		else if( ((float(yawLeftPWM) + float(yawRightPWM)) / 3000.0) < 1.0 )	//Backwards
-			motorDir.data = -1;	
+//			motorDir.data = -1;	
 		else									//Turning on the spot or stationary.
-			motorDir.data = 0;
+//			motorDir.data = 0;
 
-		motorDirectionMsg.publish(motorDir);
+//		pub.publish(motorDir);
+*/
 		ros::spin();
 		
 	}
