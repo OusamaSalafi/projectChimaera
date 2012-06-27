@@ -9,7 +9,7 @@
 
 #define MAX_POINTS 20000
 
-typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
+typedef pcl::PointCloud<pcl::PointXYZI> PointCloud;
 
 float Arr[541];
 
@@ -60,9 +60,9 @@ int main( int argc, char** argv )
 				msg->points[counter].y = lock_y = y;	
 				msg->points[counter].z = lock_z = z;
 	
-				msg->points[counter].r = int(Arr[3+(i*6)]);
-				msg->points[counter].g = int(Arr[4+(i*6)]);
-				msg->points[counter].b = int(Arr[5+(i*6)]);
+				msg->points[counter].intensity = int(Arr[3+(i*6)]);
+				//msg->points[counter].g = int(Arr[4+(i*6)]);
+				//msg->points[counter].b = int(Arr[5+(i*6)]);
 
 				msg->header.stamp = ros::Time::now ();
 				pub.publish(msg);
