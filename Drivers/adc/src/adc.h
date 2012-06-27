@@ -6,6 +6,8 @@
 
 /* Globals */
 
+unsigned int counter = 0;
+
 unsigned int accRaw = 0;
 
 unsigned int latch = 0;
