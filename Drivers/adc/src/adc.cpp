@@ -10,7 +10,7 @@
 
 #include "adc.h"
 
-int go =0;
+int go = 0;
 
 int main(int argc, char **argv){ //we need argc and argv for the rosInit function
 
