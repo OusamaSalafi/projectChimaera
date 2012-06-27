@@ -86,7 +86,7 @@ int main( int argc, char **argv )
 	std_msgs::Int32MultiArray sonarBinsArr;
 	sensor_msgs::LaserScan sonarScan;
 	
-	ros::Time scan_time = ros::Time::now();
+	//ros::Time scan_time = ros::Time::now();
 
 	//Set up a LaserScan message:
 	initLaserData(sonarScan);
@@ -116,6 +116,7 @@ int main( int argc, char **argv )
 
 	while(ros::ok())
 	{
+		ros::Time scan_time = ros::Time::now();
 
 		switchCmd = 1;
 		//Stare LL
@@ -926,6 +927,8 @@ int headSetup( void )
 	int headFlag = 0;
 
 	ROS_INFO("Sonar Head Setup.\n");
+	
+	sleep(1);
 
 	//Read Port
 	sortPacket();	
@@ -1054,8 +1057,7 @@ void rangeCallback(const std_msgs::Int32::ConstPtr& sonarRange)
 ** Returns the sonar left angle **
 *************************************************/
 
-void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
-{
+void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft) {
 	//LEFTANGLE = sonarLeft->data;
 	//RIGHTANGLE = sonarLeft->data + (1600);
 	
@@ -1069,12 +1071,13 @@ void leftCallback(const std_msgs::Int32::ConstPtr& sonarLeft)
 */
 void createLaserData(sensor_msgs::LaserScan& sonarScan, int sonarBinArray[NUMBEROFBINS], ros::Time scan_time)
 {
-		
+	sonarScan.intensities.resize(NUMBEROFBINS);
+    	sonarScan.ranges.resize(NUMBEROFBINS);
 	//Run each time
-	for (int i = 0; i < 90; i++)
+	for (int i = 0; i < NUMBEROFBINS; i++)
 		{
-			sonarScan.intensities.push_back(sonarBinArray[i]); //chuck the bins into one line of the scan as intensity
-			sonarScan.ranges.push_back(i);
+			sonarScan.intensities[i] = sonarBinArray[i]; //chuck the bins into one line of the scan as intensity
+			sonarScan.ranges[i] = i;
 		}
 
 	sonarScan.header.stamp = scan_time; //this seems to allow in index of the scans 
@@ -1091,19 +1094,19 @@ void initLaserData(sensor_msgs::LaserScan& sonarScan)
 	
 	//Set Up - Might not work being done every time it's needed.:
 	//11 secs when set to 32 steps, so twice as long for twice as many readings?
-	double sonar_scan_time = 22;//2000; //same as usleep???
+	double sonar_scan_time = 22;//22;//2000; //same as usleep???
 	//set to 16 one reading every grad, 400 grads in a circle
 	int num_sonar_readings = 400;//6399; //360 / (0.89 *( STEPANGLE/8)); //http://answers.ros.org/question/12381/time-issue-when-publishing-laser-scan-message
 	
 	sonarScan.header.frame_id = "/base_sonar"; 
 
-	sonarScan.angle_min = 0; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
-	sonarScan.angle_max = 6.28318531; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
-	sonarScan.angle_increment = (0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
+	sonarScan.angle_min = -3.14; //(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //-0.00098125 ; //see SLAM wiki	
+	sonarScan.angle_max = 3.14;//(360 / (6400 / (STEPANGLE * 2)) * 0.0174532925 ); //0.00098125 ; //see SLAM wiki
+	sonarScan.angle_increment = (0.000981747703 / 2.798); //(2.0 * 3.14)/6400;//(6.28318531 / (STEPANGLE*2));//(0.000981747703 / 2.798); //(360 / 6400) * 0.0174532925; //0.00098125 ; //see SLAM wiki - I'm not sure about this one, or are the above the same to allow for a 360 min and max angle?
 	//22secs for full scan of 400 readings so 22/400 = 0.055 
-	sonarScan.time_increment = 0.055;//1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
-
+	sonarScan.time_increment = sonar_scan_time / (6400/(STEPANGLE*2));//0.055;//1000; //(1 / sonar_frequency) / (num_sonar_readings); //see link on num_sonar_readings
+	sonarScan.scan_time= 22;//0.055;
 	sonarScan.range_min = 0;
-	sonarScan.range_max = RANGE;
+	sonarScan.range_max = (RANGE*2)-1;
 
 }

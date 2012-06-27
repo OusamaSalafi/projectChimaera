@@ -9,7 +9,8 @@
 
 #include "motor.h"
 
-#define SLEEPTIME 2500
+#define SLEEPTIME 30000
+#define LOOPTIME  300
 
 //#define DEBUG
 //#define RELEASE
@@ -23,34 +24,49 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	char c[100],s[100],e[100];
 	unsigned int speed;
 	int counter = 100;
-	int i = 0, j = 0;
+	int i = 0, j = 0, u = 0;
 
-	if(argv[1] == "test")
+	//printf("%s\n", argv[1]);
+
+	if(!initMotors())
+	{
+		printf("Failed to get a root lock\n");
+		return 0;
+	}
+	else
+	{
+		printf("Root lock on.\n");	
+	}
+	if(strcmp(argv[1], "test") == 0)
 	{
 	while(1)
 	{
 		for(j = 2; j <7; j ++)
 		{
-	
+			printf("Channel %d\n", j);	
 			for(i = 0; i < 500; i ++)
 			{
 			
-				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
-				
-				updatePWM(j, 1600);
+				for(u = 2; u < 7; u ++)
+				{
+
+					if(u == j)
+						updatePWM(u, 1650);
+					else
+						updatePWM(u, ZERO_DUTY_CYCLE_US);
+				//updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				//updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				//updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				}
+				//updatePWM(j, 1600);
 				usleep(SLEEPTIME);
-				printf("Channel %d\n", j);	
-				
+				//printf("Channel %d\n", j);	
 			}
 		}	
 		
 	}
 	}
-	else if(argv[1] == "go")
+	else if(strcmp(argv[1], "go") == 0)
 	{
 	while(1)
 	{
@@ -59,7 +75,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		while(go)
 		{
 		
-			for(i = 0; i < 500; i ++)
+			for(i = 0; i < LOOPTIME; i ++)
 			{
 			
 				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US - i);
@@ -69,21 +85,21 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				
 				printf("1 - Turning\n");	
-				
+				usleep(SLEEPTIME);				
 			}
-			for(i = 0; i < 50; i ++)
+			for(i = 0; i < LOOPTIME / 2; i ++)
 			{
 			
 				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US + i);
-				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US + i);
 				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);	
 				
 				printf("2 - Down\n");
-				
+				usleep(SLEEPTIME);
 			}
-			for(i = 0; i < 500; i ++)
+			for(i = 0; i < LOOPTIME; i ++)
 			{
 			
 				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US + i);
@@ -93,8 +109,17 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
 				
 				printf("3 - Turning\n");	
-				
-			}		
+				usleep(SLEEPTIME);
+			}
+			for(i = 0; i < LOOPTIME / 2; i ++)
+			{
+
+				updatePWM(RIGHT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(LEFT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(FRONT_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(BACK_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+				updatePWM(TEST_MOTOR_CHANNEL, ZERO_DUTY_CYCLE_US);
+			}
 		
 		}
 	
@@ -205,11 +230,11 @@ void readADC(void){
 		//}
 		spi_Close();
 	}
-	
+	gotmp = accRaw[0];
 	gotmp /= 1023.0;
 	gotmp *= 5000.0;
 	
-	if(gotmp >= 4000.0)
+	if(gotmp <= 200.0)
 	{
 	
 		go = 1;

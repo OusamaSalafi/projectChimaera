@@ -23,7 +23,7 @@
 //              1 = VIDEO
 //              2 = IMAGE
 //              3 = IPCAM
-#define INPUT_MODE		1
+#define INPUT_MODE		3
 #define VIDEO_FILENAME	"Test.avi"
 #define IMAGE_FILENAME	"Test.jpg"
 
@@ -116,9 +116,9 @@ public:
 
 		// Open HighGUI Windows
 		cv::namedWindow ("input", 1);
-		cv::namedWindow ("thresholded image", 1);
-		cv::namedWindow ("binary image", 1);
-		cv::namedWindow ("segmented output", 1);
+//		cv::namedWindow ("thresholded image", 1);
+//		cv::namedWindow ("binary image", 1);
+//		cv::namedWindow ("segmented output", 1);
 		ROS_INFO("Opened Windows");
 
 		//Read in the environmental variable that stores the location of the config files
