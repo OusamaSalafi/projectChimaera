@@ -19,7 +19,7 @@
 //              1 = VIDEO
 //              2 = IMAGE
 //              3 = IPCAM
-#define INPUT_MODE		1
+#define INPUT_MODE	0
 #define VIDEO_FILENAME	"Test.avi"
 #define IMAGE_FILENAME	"Test.jpg"
 #define PI 3.1459
