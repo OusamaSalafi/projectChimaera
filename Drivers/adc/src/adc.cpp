@@ -7,8 +7,10 @@
 #include "ad79x8.h"
 
 
+
 #include "adc.h"
 
+int go =0;
 
 int main(int argc, char **argv){ //we need argc and argv for the rosInit function
 
@@ -23,7 +25,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::Publisher adcGoMsg = adcN.advertise<std_msgs::UInt32>("adcGo", 100);
 	std_msgs::UInt32 adcGo;
 
-	initADC();
+//	initADC();
 
 	ROS_INFO("ADC Online");
 
