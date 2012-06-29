@@ -6,9 +6,10 @@
 #include "geometry_msgs/Vector3.h"
 #define ACCXTHRESH 0.01
 #define ACCYTHRESH 0.01
-#define VELOCITYSR 250
-#define	VELOCITYTHRESHY 0.0001
-#define	VELOCITYTHRESHX 0.0005
+#define VELOCITYSR 1000 //250
+#define	VELOCITYTHRESHY 0.001
+#define	VELOCITYTHRESHX 0.000005
+#define VELDEADZONE 0.000005
   
   
   geometry_msgs::Quaternion orient;
@@ -107,13 +108,17 @@ int main(int argc, char** argv){
     velCount += 1;
     }
     
-    
-    if ((vx <= deltavx + VELOCITYTHRESHX) && (vx >= deltavx - VELOCITYTHRESHX)){ //fix for velocity not returning to 0
+    //fix for velocity not returning to 0
+    if (((vx <= deltavx + VELOCITYTHRESHX) && (vx >= deltavx - VELOCITYTHRESHX)) || ((vx > -VELDEADZONE) && (vx < VELDEADZONE))){ 
     vx = 0;
-    } else if (vx > deltavx + VELOCITYTHRESHX){
-    vx = vx - VELOCITYTHRESHX;
-    } else if (vx < deltavx - VELOCITYTHRESHX){
-    vx = vx + VELOCITYTHRESHX;
+    } else if (vx > VELDEADZONE){
+    vx = vx - VELDEADZONE;
+    } else if (vx < -VELDEADZONE){
+    vx = vx + VELDEADZONE;
+    }
+    
+    if (((deltavx < 0) && (vx > 0) && (vx < 0.1))  || ((deltavx > 0) && (vx < 0) && (vx > -0.1))){
+    vx = 0;
     }
     
     if ((vy <= deltavy + VELOCITYTHRESHY) && (vy >= deltavy - VELOCITYTHRESHY)){ 
