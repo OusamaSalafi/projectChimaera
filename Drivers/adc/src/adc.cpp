@@ -26,7 +26,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::Publisher adcGoMsg = adcN.advertise<std_msgs::UInt32>("adcGo", 100);
 	std_msgs::UInt32 adcGo;
 
-	adc_Init();
+//	adc_Init();
 
 	ROS_INFO("ADC Online");
 
@@ -37,6 +37,7 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		readADC();
 
 		adcGo.data = checkGo();
+		printf("MessageData : %d\n", adcGo.data);
 		
 		if((latch == 1) && (adcGo.data == 1)){
 			if(counter > 100){
@@ -55,7 +56,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 				latch = 0;
 			}
 		}
-		printf("Latch: %u, counter: %u",latch,counter);
+
+//		printf("Latch: %u, counter: %u",latch,counter);
 		counter++;
 		adcGoMsg.publish(adcGo);
 
@@ -71,9 +73,11 @@ unsigned int checkGo(void){
 	goTmp = (float)accRaw[GO];
 	goTmp /= ADCRES;
 	goTmp *= VREFH;
+
+	printf("\ngoTmp = %d\n", goTmp);
 	
 	if(goTmp >= VON){
-		ROS_DEBUG("GO!!");
+		printf("GO!!");
 		if(latch == 0){
 			counter = 0;
 		}
@@ -95,21 +99,13 @@ void readADC(void){
         {
                 //for(i=0;i<8;i++){
                         accRaw[0] = adc_ReadChannel(0, ADCMODE_RANGE_2VREF,ADCMODE_UNSIGNEDCODING);
-                        //printf("Val at channel %u: is %u\n",i,accRaw[i]);
+                        printf("Val at channel %u: is %u\n",i,accRaw[i]);
                 //}
                 spi_Close();
         }
         gotmp = accRaw[0];
         gotmp /= 1023.0;
         gotmp *= 5000.0;
-
-        if(gotmp <= 200.0)
-        {
-        
-                go = 1;
-                printf("Go Forth!\n");
-
-        }
 
         return; 
 }
