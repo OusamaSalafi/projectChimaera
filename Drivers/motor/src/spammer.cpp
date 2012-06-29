@@ -40,7 +40,9 @@ void depth_left_cb(int pos)
 
 void yaw_right_cb(int pos)
 {
+	printf("\nYaw right = %d\n", pos+1000);
 	msgYR.data = pos+1000;
+	p_yaw_right.publish(msgYR);
 }
 
 void yaw_left_cb(int pos)
@@ -57,6 +59,7 @@ void pitch_cb(int pos)
 void go_cb(int pos)
 {
 	msgGO.data = pos;
+	printf("Go Signal = %i\n", pos);
 }
 
 int main(int argc, char **argv)
@@ -69,8 +72,8 @@ int main(int argc, char **argv)
 	/*Advertises our various messages*/
 	p_depth_right = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampDepthRight", 100);
 	p_depth_left = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampDepthLeft", 100); 
-	p_yaw_right = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampYawLeft", 100);
-	p_yaw_left = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampYawRight", 100);
+	p_yaw_right = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampYawRight", 100);
+	p_yaw_left = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampYawLeft", 100);
 	p_pitch = motorspammer_nh.advertise<std_msgs::UInt32>("pidRampPitch", 100);
 	
 	p_go = motorspammer_nh.advertise<std_msgs::UInt32>("pilotGo", 100);	
@@ -81,13 +84,13 @@ int main(int argc, char **argv)
 	//Create track Bars
 	cvCreateTrackbar("Depth Right (CH1)","MotorSpammer", &depth_right,1000,&depth_right_cb);
 	cvCreateTrackbar("Depth Left (CH2)_","MotorSpammer", &depth_left,1000,&depth_left_cb);
-	cvCreateTrackbar("Yaw Left (CH3)___","MotorSpammer", &yaw_right,1000,&yaw_right_cb);	
-	cvCreateTrackbar("Yaw Right (CH4)__","MotorSpammer", &yaw_left,1000,&yaw_left_cb);
+	cvCreateTrackbar("Yaw Right (CH3)___","MotorSpammer", &yaw_right,1000,&yaw_right_cb);	
+	cvCreateTrackbar("Yaw Left (CH4)__","MotorSpammer", &yaw_left,1000,&yaw_left_cb);
 	cvCreateTrackbar("PITCH (CH5)______","MotorSpammer", &pitch,1000,&pitch_cb);	
 	
 	cvCreateTrackbar("GO", "MotorSpammer", &go, 1, &go_cb);
 
-	msgDR.data = msgDL.data = msgYR.data = msgYL.data = msgP.data = 1500;
+//	msgDR.data = msgDL.data = msgYR.data = msgYL.data = msgP.data = 1500;
 
 	while (ros::ok())
 	{
@@ -95,11 +98,11 @@ int main(int argc, char **argv)
 		// Allow The HighGUI Windows To Stay Open
 		cv::waitKey(3);
 			
-			p_depth_right.publish(msgDR);
-			p_depth_left.publish(msgDL);
-			p_yaw_right.publish(msgYR);
-			p_yaw_left.publish(msgYL);
-			p_pitch.publish(msgP);
+	//		p_depth_right.publish(msgDR);
+	//		p_depth_left.publish(msgDL);
+	//		p_yaw_right.publish(msgYR);
+	//		p_yaw_left.publish(msgYL);
+	//		p_pitch.publish(msgP);
 			p_go.publish(msgGO);
 	
 	}
