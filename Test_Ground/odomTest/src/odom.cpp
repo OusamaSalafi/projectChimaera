@@ -4,8 +4,11 @@
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
-#define ACCXTHRESH 0.05
-#define ACCYTHRESH 0.05
+#define ACCXTHRESH 0.01
+#define ACCYTHRESH 0.01
+#define VELOCITYSR 250
+#define	VELOCITYTHRESHY 0.0001
+#define	VELOCITYTHRESHX 0.0005
   
   
   geometry_msgs::Quaternion orient;
@@ -18,11 +21,9 @@ int main(int argc, char** argv){
 
   ros::NodeHandle n;
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-  ros::Subscriber sub1 = n.subscribe("IMU", 1, IMUCallBack);
-  //ros::Subscriber sub2 = n.subscribe("map", 100, MapCallBack);
+  ros::Subscriber sub1 = n.subscribe("IMU", 0, IMUCallBack);
   tf::TransformBroadcaster odom_broadcaster;
-  
-  //sensor_msgs::Imu sub1;
+ 
 
   double vx = 0.0;
   double vy = 0.0;
@@ -30,6 +31,8 @@ int main(int argc, char** argv){
 
   double deltavx = 0.0;
   double deltavy = 0.0;
+  double deltavxTemp = 0.0;
+  double deltavyTemp = 0.0;
   
   double x = 0.0;
   double y = 0.0;
@@ -42,44 +45,21 @@ int main(int argc, char** argv){
   double prevVelx = 0.0;
   double prevVely = 0.0;
   double prevVelth = 0.0;
-  
-  double prevAccx = 0.0;
-  double prevAccy = 0.0;
 
   double delta_x;
   double delta_y;
   double delta_th;
   double dt;
-  
-  double calAccx = 0.0;
-  double calAccy = 0.0;
-  double calAccth = 0.0;
-  int calCount = 0;
-  int velCount = 0;
-  int Count = 0;
-  char directionSetX = 0;
-  char directionSetY = 0;
-  bool calibrated = false;
 
+  int velCount = 0;
 
   ros::Time current_time, last_time;
   current_time = ros::Time::now();
   last_time = ros::Time::now();
 
-  ros::Rate r(100.0);
+  ros::Rate r(1000.0);
   while(n.ok()){
   	
-    if ((calCount <= 100) && (calibrated == false)){
-  	calAccx += accx;
-  	calAccy += accy;
-  	calCount += 1;  
-  	printf("Calibrating...\n");
-  	
-  	} else if (calibrated == false) {
-  	calibrated = true;
-  	calAccx = calAccx / 100;
-  	calAccy = calAccy / 100;
-  	}
   	
   	
   
@@ -87,124 +67,64 @@ int main(int argc, char** argv){
     ros::spinOnce();               // check for incoming messages
     current_time = ros::Time::now();
     
-    if (calibrated == true){
-    
-    dt = (current_time - last_time).toSec(); 
+    dt = (current_time - last_time).toSec(); //set time
    	
-    accx = linAcc.x;
+    accx = linAcc.x; //get acceleration from IMU
     accy = linAcc.y;
     accth = linAcc.z;
-    if ((accx < ACCXTHRESH) && (accx > -ACCXTHRESH)){
+    
+    if ((accx < ACCXTHRESH) && (accx > -ACCXTHRESH)){ //threshold acceleration coming in
     accx = 0;
-    prevVelx = 0;    
-    directionSetX = 0;
     } else if (accx > ACCXTHRESH) {
     accx = accx -ACCXTHRESH;
     } else if (accx < -ACCXTHRESH) {
     accx = accx +ACCXTHRESH;
     }
     
-    if ((accy < ACCYTHRESH) && (accy > -ACCYTHRESH)){
+    if ((accy < ACCYTHRESH) && (accy > -ACCYTHRESH)){ //same for y
     accy = 0;
-    prevVely = 0;
-    directionSetY = 0;
     } else if (accy > ACCYTHRESH) {
     accy = accy -ACCYTHRESH;
     } else if (accy < -ACCYTHRESH) {
     accy = accy +ACCYTHRESH;
     }
     
-    /*if ((accx < -0.01) || (accx == 0.0)){
-    //accx = 0;
-    prevVelx = 0;
-     
-    }
-    
-    if ((accy > -0.02) && (accy < 0.02)){
-    //accx = 0;
-    prevVely = 0;
-     
-    }/*
-    if (((prevVelx > 1) || (prevVelx < -1)) || ((prevVelx < 0.0001) || (prevVelx > -0.0001))){ //PLAY WITH THIS TILL IT WORKS!
-    prevVelx = 0;
-    }*/
-    
-    
-    
-    /*    
-    if (((accy > 0) && (accy < 0.5)) || ((accy < 0) && (accy > -0.5))){
-    //accy = 0;
-    prevVely = 0;
-    }*/
-       if (Count == 100){
-    Count = 0;
-    prevVelx = 0;
-    prevVely = 0;
-    //printf("10");
-    } else {
-    Count += 1;
-    }
-    velCount += 1;
 
     vx = prevVelx + (accx * dt);// Velocity in X
     vy = prevVely + (accy * dt);// Velocity in Y
-    vth = angVel.z;
+    vth = angVel.z; //IMU does angular velocity
     
-    /*if (velCount == 3){
+    deltavxTemp += vx; //do integral of velocity
+    deltavyTemp += vy;
+    
+    if (velCount == VELOCITYSR){ //average results
     velCount = 0;
-    vx = deltavx / 3;
-    vy = deltavy / 3;
-    deltavx = 0;
-    deltavy = 0;
-    }*/
-    if (vx == prevVelx){
+    deltavx = deltavxTemp / VELOCITYSR;
+    deltavy = deltavyTemp / VELOCITYSR;
+    deltavxTemp = 0;
+    deltavyTemp = 0;
+    } else {
+    velCount += 1;
+    }
+    
+    
+    if ((vx <= deltavx + VELOCITYTHRESHX) && (vx >= deltavx - VELOCITYTHRESHX)){ //fix for velocity not returning to 0
     vx = 0;
-
+    } else if (vx > deltavx + VELOCITYTHRESHX){
+    vx = vx - VELOCITYTHRESHX;
+    } else if (vx < deltavx - VELOCITYTHRESHX){
+    vx = vx + VELOCITYTHRESHX;
     }
-    if (vy == prevVely){
+    
+    if ((vy <= deltavy + VELOCITYTHRESHY) && (vy >= deltavy - VELOCITYTHRESHY)){ 
     vy = 0;
+    } else if (vy > deltavy + VELOCITYTHRESHY){
+    vy = vy - VELOCITYTHRESHY;
+    } else if (vx < deltavx - VELOCITYTHRESHY){
+    vy = vy + VELOCITYTHRESHY;
     }
     
-    if ((prevVelx > 0) && (vx > prevVelx))
-    {
-    directionSetX = 1;
-    } else if ((prevVelx < 0) && (vx < prevVelx)) 
-    {
-    directionSetX = -1;
-    }
-    
-    
-    if ((directionSetX == 1) && (vx < 0)){
-    vx = vx * -1;
-    } 
-    if ((directionSetX == -1) && (vx > 0)){
-    vx = vx * -1;
-    }
-    
-        if ((prevVely > 0) && (vy > prevVely))
-    {
-    directionSetY = 1;
-    } else if ((prevVely < 0) && (vy < prevVely)) 
-    {
-    directionSetY = -1;
-    }
-    
-    
-    if ((directionSetY == 1) && (vy < 0)){
-    vy = vy * -1;
-    } 
-    if ((directionSetY == -1) && (vy > 0)){
-    vy = vy * -1;
-    }
 
-
-
-    
-
-    
-
-
-    
     printf("T = %f \n", dt);
     printf("X velocity = %+#7.2f \n", vx);   
     printf("Y velocity = %+#7.2f \n", vy);
@@ -215,33 +135,16 @@ int main(int argc, char** argv){
     printf("Y Accelleration = %+#7.2f \n", accy);
     printf("angular accel = %+#7.2f\n\n", accth);
     //compute odometry in a typical way given the velocities of the robot
-    
-
-    /*double delta_x = (vx * cos(th) - vy * sin(th)) * dt;
-    double delta_y = (vx * sin(th) + vy * cos(th)) * dt;
-    double delta_th = vth * dt;*/
-    
-    
-    
-    //if (((vx > 0.1) || (vx < -0.1)) && ((accx >= 0.1) || (accx <= -0.1))){
-	    delta_x = (vx*dt) - (0.5*(accx)*(dt*dt));    
-	    x += delta_x;
-    //}
-    
-    //if (((vy > 0.1) || (vy < -0.1)) && ((accy >= 0.1) || (accy <= -0.1))){
-	    delta_y = (vy*dt) - (0.5*(accy)*(dt*dt));
-	    y += delta_y;
-    //}
-    
-   
-	    delta_th = ((prevVelth + vth) / 2)*dt;
-	    th += delta_th;
-    
-
-
-    
-
-    
+    //X
+    delta_x = (vx*dt) - (0.5*(accx)*(dt*dt));    //PHYSICS!
+    x += delta_x;
+    //Y
+    delta_y = (vy*dt) - (0.5*(accy)*(dt*dt));
+    y += delta_y;
+    //TH   
+    delta_th = ((prevVelth + vth) / 2)*dt; //DIFFERENT PHYSICS FOR THETA!
+    th += delta_th;
+	    
     printf("X = %+#7.2f \n", x);
     printf("Y = %+#7.2f \n", y);
     printf("Th = %+#7.2f\n\n", th);
@@ -281,17 +184,16 @@ int main(int argc, char** argv){
     odom.twist.twist.linear.y = vy;
     odom.twist.twist.angular.z = vth;
     
-
     //publish the message
     odom_pub.publish(odom);
 
     prevVelx = vx;
     prevVely = vy;
-    //prevVelth = vth;
+
     last_time = current_time;
     }
     r.sleep();
-  }
+  
 }
 
 void IMUCallBack (const sensor_msgs::Imu::ConstPtr& IMUData){
@@ -300,13 +202,7 @@ void IMUCallBack (const sensor_msgs::Imu::ConstPtr& IMUData){
 	orient = IMUData->orientation;
 	return;
 	}
-	
-/*void MapCallBack (const nav_msgs::OccupancyGrid::ConstPtr& MapData){
-	linAcc = IMUData->linear_acceleration;
-	angVel = IMUData->angular_velocity;
-	orient = IMUData->orientation;
-	return;
-	}*/
+
 	
 
 
