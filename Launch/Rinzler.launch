@@ -1,16 +1,13 @@
 <launch>
 	<!--	DISPLAY NAME	NODE NAME	RUN NAME	ARGUMENTS	-->
-	<node name="Heading"	pkg="control"	type="pid"	args="heading"	/>
-	<node name="Depth"	pkg="control"	type="pid"	args="depth"	/>
-	<node name="Pitch"	pkg="control"	type="pid"	args="pitch"	/>
+	<node name="Heading"	pkg="control2"	type="pid"	args="heading"	/>
+	<node name="Depth"	pkg="control2"	type="pid"	args="depth"	/>
+	<node name="Pitch"	pkg="control2"	type="pid"	args="pitch"	/>
 	<node name="DepthMod"	pkg="depthMod"	type="depthMod"			/>
 	<node name="PIDRamp"	pkg="pidRamp"	type="slew"			/>
-	
-	<node name="Motors"	pkg="motor"	type="motor"			/>
-	<node name="Compass"	pkg="compass"	type="compass"			/>
 
 	<node name="halt"	pkg="halt"	type="halt"			/>
-	<!-- <node name="pilot"	pkg="pilot"	type="pilot"			/> -->
+	<node name="pilot"	pkg="pilot"	type="pilot"			/> 
 
-	<!-- <node name="record"	pkg="rosbag"	type="record"	output="screen"	args="-a -O /home/uwesub/ProjectRinzler/	/> -->
+	
 </launch>

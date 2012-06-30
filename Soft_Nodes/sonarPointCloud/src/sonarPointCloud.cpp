@@ -53,8 +53,8 @@ int main( int argc, char** argv )
 			//{
 				//ROS_INFO("%d = x: %f, y: %f, z: %f, r: %d, g: %d, b: %d",counter, x, y, z, int(Arr[3]), int(Arr[4]), int(Arr[5]));
 
-
-				if( (i>=10) && (Arr[3+(i*4)] >= 90.0) )
+				//Ignore its own reflections, also threshold.
+				if( (i>=6) && (Arr[3+(i*4)] >= 90.0) )
 				{
 					x = Arr[0+(i*4)];
 					z = Arr[1+(i*4)];

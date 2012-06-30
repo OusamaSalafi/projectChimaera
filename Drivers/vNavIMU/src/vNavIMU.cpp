@@ -13,7 +13,7 @@
 using namespace std;
 #include <iostream>
 
-#define LOOP_RATE 10
+#define LOOP_RATE 50
 
 //#include <sstream>
 //
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	std_msgs::Float32 compassPitch;
 	std_msgs::Float32 compassRoll;
 
-	ros::Publisher vNavMsg = imu.advertise<sensor_msgs::Imu>("IMU", 100);
+	ros::Publisher vNavMsg = imu.advertise<sensor_msgs::Imu>("IMU", 0);
 	sensor_msgs::Imu IMU;
 	//sensor messages require geometry messages 
 	geometry_msgs::Quaternion rosQuat;
@@ -92,27 +92,32 @@ int main(int argc, char **argv)
 		vn100_getYawPitchRollTrueInertialAcclerationAngularRate(&vn100, &ypr, &acceleration, &angularRate);
 		//vn100_getYawPitchRoll(&vn100, &ypr); //vectornav function
 		//printf("YPR: %+#7.2f %+#7.2f %+#7.2f\n", ypr.yaw, ypr.pitch, ypr.roll);
-		ROS_DEBUG("H: %+#7.2f P: %+#7.2f R: %+#7.2f",ypr.yaw, ypr.pitch, ypr.roll);
+		//ROS_DEBUG("H: %+#7.2f P: %+#7.2f R: %+#7.2f",ypr.yaw, ypr.pitch, ypr.roll);
 		compassHeading.data = ypr.yaw;	
 		compassPitch.data = ypr.pitch;
 		compassRoll.data = ypr.roll;
-		
 		compassHeadingMsg.publish(compassHeading);
 		compassRollMsg.publish(compassRoll);
 		compassPitchMsg.publish(compassPitch);
+
 		
 		//Publish the IMU data as an IMU Message
 		//http://www.ros.org/doc/api/sensor_msgs/html/msg/Imu.html
 		IMU.header.frame_id = "/auv"; 
+
 		IMU.header.stamp = imu_time;
+
 		vn100_getQuaternion(&vn100 , &quat); 
+
 		
 		//vn100_getKalmanFilterStateVector(&vn100, &quat, &gyroscope);
 		rosQuat.x = quat.x;
 		rosQuat.y = quat.y;
 		rosQuat.z = quat.z;
 		rosQuat.w = quat.w;
+
 		IMU.orientation = rosQuat;
+
 		//printf("gyroscope - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", gyroscope.c0, gyroscope.c1, gyroscope.c2);
 		//vn100_getCalibratedImuMeasurements(&vn100, &magnetic, &acceleration, &angularRate, &temp); //try out new settings...
 		
@@ -123,20 +128,22 @@ int main(int argc, char **argv)
 		rosVec_linAccel.x = acceleration.c0;
 		rosVec_linAccel.y = acceleration.c1;
 		rosVec_linAccel.z = acceleration.c2;
+
 		IMU.linear_acceleration = rosVec_linAccel;
-		printf("Lin Acc - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", acceleration.c0, acceleration.c1, acceleration.c2);
+		//printf("Lin Acc - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", acceleration.c0, acceleration.c1, acceleration.c2);
 		
 		//vn100_getAngularRate(&vn100, &angularRate);
 		rosVec_angVel.x = angularRate.c0;
 		rosVec_angVel.y = angularRate.c1;
-		rosVec_angVel.z = angularRate.c2;			
+		rosVec_angVel.z = angularRate.c2;
+
 		IMU.angular_velocity = rosVec_angVel;
-		printf("Angular Rate - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", angularRate.c0, angularRate.c1, angularRate.c2);
+		//printf("Angular Rate - Vna: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f\n", angularRate.c0, angularRate.c1, angularRate.c2);
 		
 
 		
 		vNavMsg.publish(IMU);
-		printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n\n", quat.x , quat.y , quat.z , quat.w);
+		//printf("Quaternion: X:%+#7.2f  Y:%+#7.2f  Z:%+#7.2f  W:%+#7.2f\n\n", quat.x , quat.y , quat.z , quat.w);
 
 
 		
@@ -147,6 +154,7 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 
 		loop_rate.sleep();
+
 
 	}
 

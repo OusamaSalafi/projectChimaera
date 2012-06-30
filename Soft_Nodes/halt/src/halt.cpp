@@ -37,6 +37,7 @@ int main(int argc, char **argv){
 
 	while(ros::ok()){
 		ros::spinOnce();
+		printf("go : %d\n", go);
 		if(go && (count > COUNTLIM)){
 			pilotGo.data = 1;
 		}

@@ -1,8 +1,14 @@
 <launch>
 	<!-- DISPLAY NAME	NODE NAME	RUN NAME	ARGUMENTS	-->
 	<!-- Drivers -->
-	<node name="Sonar"	pkg="sonar"		type="sonar"		/>
+        <node name="Heading"    pkg="control"   type="pid"      args="heading"  />
+        <node name="Depth"      pkg="control"   type="pid"      args="depth"    />
+        <node name="Pitch"      pkg="control"   type="pid"      args="pitch"    />
+        <node name="DepthMod"   pkg="depthMod"  type="depthMod"                 />
+>
 
-	<!-- Soft Nodes -->
-	<node name="Scanner"	pkg="sonarScanner"	type="sonarScanner"	/>
+        <node name="pidRamp"    pkg="pidRamp"           type="pidRamp"           />
+        <node name="pilot"      pkg="pilot"             type="pilot"             />
+        <node name="halt"       pkg="halt"              type="halt"             />
+
 </launch>
