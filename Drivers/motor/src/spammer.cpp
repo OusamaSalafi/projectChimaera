@@ -36,18 +36,32 @@ void depth_right_cb(int pos)
 void depth_left_cb(int pos)
 {
 	msgDL.data = pos+1000;
+	p_depth_left.publish(msgDL);
 }
 
 void yaw_right_cb(int pos)
 {
-	printf("\nYaw right = %d\n", pos+1000);
-	msgYR.data = pos+1000;
+	//printf("\nYaw right = %d\n", pos+1000);
+	//msgYR.data = pos+1000;
+	switch (pos)
+	{
+			case 0: 
+				msgYR.data = 1000;
+				break;
+			case 1:
+				msgYR.data = 1500;
+				break;
+			case 2: 
+				msgYR.data = 2000;
+				break;
+	}
 	p_yaw_right.publish(msgYR);
 }
 
 void yaw_left_cb(int pos)
 {
 	msgYL.data = pos+1000;
+	p_yaw_left.publish(msgYL);
 }
 
 void pitch_cb(int pos)
@@ -84,7 +98,7 @@ int main(int argc, char **argv)
 	//Create track Bars
 	cvCreateTrackbar("Depth Right (CH1)","MotorSpammer", &depth_right,1000,&depth_right_cb);
 	cvCreateTrackbar("Depth Left (CH2)_","MotorSpammer", &depth_left,1000,&depth_left_cb);
-	cvCreateTrackbar("Yaw Right (CH3)___","MotorSpammer", &yaw_right,1000,&yaw_right_cb);	
+	cvCreateTrackbar("Yaw Right (CH3)___","MotorSpammer", &yaw_right,2,&yaw_right_cb);	
 	cvCreateTrackbar("Yaw Left (CH4)__","MotorSpammer", &yaw_left,1000,&yaw_left_cb);
 	cvCreateTrackbar("PITCH (CH5)______","MotorSpammer", &pitch,1000,&pitch_cb);	
 	
@@ -103,7 +117,7 @@ int main(int argc, char **argv)
 	//		p_yaw_right.publish(msgYR);
 	//		p_yaw_left.publish(msgYL);
 	//		p_pitch.publish(msgP);
-			p_go.publish(msgGO);
+	//		p_go.publish(msgGO);
 	
 	}
 }
