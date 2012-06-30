@@ -10,6 +10,7 @@
   <url>http://ros.org/wiki/pilot</url>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
+  <depend package="opencv2"/>
 
 </package>
 
