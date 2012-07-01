@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 		drawLine(sD, -10, 0);
 		printf("pilotDepth:\t");
 		drawLine(pD, -10, 0);
-		//heading motors
+		//depth motors
 		printf("Depth Left:\t");
 		drawLine(mdL, 0, 100);
 		printf("Depth Right:\t");
@@ -114,10 +114,14 @@ int main(int argc, char **argv)
 		drawLine(cP, 0, 180);
 		printf("pilotPitch:\t");
 		drawLine(pP, 0, 180);
-		//heading motors
+		//pitch motors
 		printf("Pitch:\t");
 		drawLine(mp, 0, 100);
-				
+		
+		printf("pilotRoll:\t");
+		drawLine(pR, 0, 180);
+		printf("compassRoll:\t");
+		drawLine(cR, 0, 180);		
 
 		printf("\n\n\tHeading: ");		
 	
@@ -325,8 +329,8 @@ void compassRoll_cb(const std_msgs::Float32::ConstPtr& sub)
 {
 float tempcR;
 	tempcR = int(sub->data);
-	if(tempcR < 0)
-		tempcR = tempcR * -1;
+	//if(tempcR < 0)
+	//	tempcR = tempcR * -1;
 	cR = int(tempcR) + 90;
 	return;
 }

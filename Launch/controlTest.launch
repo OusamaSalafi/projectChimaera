@@ -3,6 +3,7 @@
 	<node name="Heading"	pkg="control2"	type="pid"	args="heading"	/>
 	<node name="Depth"	pkg="control2"	type="pid"	args="depth"	/>
 	<node name="Pitch"	pkg="control2"	type="pid"	args="pitch"	/>
+	<!-- <node name="Roll"	pkg="control2"	type="pid"	args="roll"	/> -->
 	<node name="DepthMod"	pkg="depthMod"	type="depthMod"			/>
 	<node name="PIDRamp"	pkg="pidRamp"	type="slew"			/>
 
