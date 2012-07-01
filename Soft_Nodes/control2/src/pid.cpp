@@ -494,8 +494,8 @@ float pid(float value, float targetValue){
 	char *configpath = getenv("SUB_CONFIG_PATH");
 	if (configpath == NULL)
 	{
-	std::cout << "Problem getting SUB_CONFIG_PATH variable." << std::endl;
-	exit(-1);
+	std::cout << "Problem getting SUB_CONFIG_PATH variable. Reverting to defaults." << std::endl;
+	//exit(-1);
 	}
 	//filepath=configpath+filename
 	sprintf(file_path, "%s%s", configpath,	file_name);

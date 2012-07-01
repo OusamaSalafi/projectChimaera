@@ -167,9 +167,9 @@ int main(int argc, char **argv){
 				tmp *= 1.0;
 			}
 
-			frontRate.data = tmp;
+			pitchRate.data = tmp;
 
-			if((targetDepth - depth) > FRONTTHRESH){	//if we are really far off target
+			if((targetDepth - depth) > PITCHTHRESH){	//if we are really far off target
 				depthDRate.data = tmp * -0.4;			//add rear motor power
 				depthDRateMsg.publish(depthDRate);
 			}
@@ -180,7 +180,7 @@ int main(int argc, char **argv){
 
 			pitchRateMsg.publish(pitchRate);
 
-			ROS_DEBUG("Depth PID Front %.3f Depth Rear %.3f",pitchRate.data,depthDRate.data);
+			ROS_DEBUG("Depth PID Pitch %.3f Depth Rear %.3f",pitchRate.data,depthDRate.data);
 
 			loop_rate.sleep();
 
@@ -190,7 +190,7 @@ int main(int argc, char **argv){
 
 		/* Publish */
 
-		ros::Publisher backPRateMsg = pidN.advertise<std_msgs::Float32>("depthPRate", 100);
+		ros::Publisher depthPRateMsg = pidN.advertise<std_msgs::Float32>("depthPRate", 100);
 		std_msgs::Float32 depthPRate;
 
 		/* Subscribe */
@@ -234,7 +234,7 @@ int main(int argc, char **argv){
 				depthPRate.data = 0.0;	//use bouyancy
 			}
 
-			backPRateMsg.publish(depthPRate);
+			depthPRateMsg.publish(depthPRate);
 
 			ROS_DEBUG("Pitch PID Back %.3f",depthPRate.data);
 
@@ -495,7 +495,7 @@ float pid(float value, float targetValue){
 	if (configpath == NULL)
 	{
 	std::cout << "Problem getting SUB_CONFIG_PATH variable." << std::endl;
-	exit(-1);
+	//exit(-1);
 	}
 	//filepath=configpath+filename
 	sprintf(file_path, "%s%s", configpath,	file_name);

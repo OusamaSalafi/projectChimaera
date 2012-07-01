@@ -30,7 +30,15 @@ float left;
 float right;
 
 float KP, KD, KI;
-float KPH,KDH,KIH, KPD, KDD, KID, KPP, KDP, KIP;
+float 	KPH = 2.0,
+	KDH = 1.0,
+	KIH = 0.1, 
+	KPD = 300.0, 
+	KDD = 0.1, 
+	KID = 0.1, 
+	KPP = 10.0, 
+	KDP = 1.5, 
+	KIP = 0.1;
 
 int PLUSBUFF, MINUSBUFF;
 int deadZ =0;

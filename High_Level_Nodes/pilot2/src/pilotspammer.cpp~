@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 	p_roll = pilotspammer_nh.advertise<std_msgs::Float32>("pilotRoll", 100);
 	p_depth = pilotspammer_nh.advertise<std_msgs::Float32>("pilotDepth", 100);
 	
-	p_go = pilotspammer_nh.advertise<std_msgs::UInt32>("pilotGo", 100);
+	p_go = pilotspammer_nh.advertise<std_msgs::UInt32>("pilotOkGo", 100);
 		
 	//create the window
 	cvNamedWindow("Pilot Spammer",0);
