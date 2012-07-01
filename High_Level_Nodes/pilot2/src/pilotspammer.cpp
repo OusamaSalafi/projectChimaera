@@ -3,6 +3,7 @@
 #include <opencv/highgui.h>
 #include <ros/ros.h>
 #include "std_msgs/UInt32.h"
+#include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
 
 //Our desired heading, start off at zero.
@@ -50,12 +51,12 @@ void roll_cb(int pos)
 }
 void depth_cb(int pos)
 {
-	msgDepth.data = pos;
+	msgDepth.data = (pos * -1);
 	p_depth.publish(msgDepth);
 }
 void svpdepth_cb(int pos)
 {
-	msgSVPDepth.data = pos;
+	msgSVPDepth.data = (pos * -1);
 	p_svpdepth.publish(msgSVPDepth);
 }
 void go_cb(int pos)
@@ -88,9 +89,9 @@ int main(int argc, char **argv)
 	cvCreateTrackbar("Heading","Pilot Spammer", &heading,360,&heading_cb);
 	cvCreateTrackbar("Pitch","Pilot Spammer", &pitch,180,&pitch_cb);
 	cvCreateTrackbar("Roll","Pilot Spammer", &roll,360,&roll_cb);
-	cvCreateTrackbar("Depth","Pilot Spammer", &depth,100,&depth_cb);
+	cvCreateTrackbar("--- Depth","Pilot Spammer", &depth,10,&depth_cb);
 	
-	cvCreateTrackbar("SVP Depth","Pilot Spammer", &svpdepth,100,&svpdepth_cb);
+	cvCreateTrackbar("SVP Depth","Pilot Spammer", &svpdepth,10,&svpdepth_cb);
 	
 	cvCreateTrackbar("Go","Pilot Spammer", &go,1,&go_cb);
 

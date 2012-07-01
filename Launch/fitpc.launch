@@ -10,6 +10,34 @@
 	<node name="IMU"	pkg="vNavIMU"	type="vNavIMU"			/>
 	<node name"PipeCam"	pkg="dwncam2"	type="dwncam"			/>
 	<!--	<node name="FWDCAM"	pkg="fwdcam"	type="fwdcam"			/>	-->
+	
+	<node name="Injector"	pkg="sonarInjector"	type="sonarInjector"	/>
+	<node name="Pointcloud"	pkg="sonarPointCloud"	type="sonarPointCloud"	/>
+
+	<node pkg="nodelet" type="nodelet" name="sonarManager" output="screen" respawn="true" args="manager"/>
+
+	<!-- throttling -->
+	<node pkg="nodelet" type="nodelet" name="pointcloud_throttle" args="load pointcloud_to_laserscan/CloudThrottle sonarManager" respawn="true">
+	  <param name="max_rate" value="5.0"/>
+	  <remap from="cloud_in" to="/sonarPC"/>
+	  <remap from="cloud_out" to="/sonar_throttled"/>
+	</node>
+	
+	<!-- fake laser -->
+	<node pkg="nodelet" type="nodelet" name="sonarToLaser" args="load pointcloud_to_laserscan/CloudToScan sonarManager">
+    	  <param name="output_frame_id" value="/base_sonar"/>
+    	  <param name="min_height" value="0.0"/>
+    	  <param name="max_height" value="255.0"/>
+    	  <param name="angle_min" value="-3.14159265"/>
+    	  <param name="angle_max" value="3.14159265"/>
+    	  <param name="scan_time" value="1/5.0"/>
+    	  <param name="range_min" value="0.0"/>
+    	  <param name="range_max" value="90.0"/>
+    	  <remap from="cloud" to="/sonar_throttled"/>
+	  <remap from="scan" to="/sonarLaser"/>
+	</node>	
+
+	<!-- ODOM & gmapping need to go here -->
 
 	<node name="halt"	pkg="halt"	type="halt"			/>
 	<node name="Pilot"	pkg="pilot2"	type="pilot"			/> 

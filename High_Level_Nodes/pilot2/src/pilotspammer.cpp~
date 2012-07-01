@@ -3,6 +3,7 @@
 #include <opencv/highgui.h>
 #include <ros/ros.h>
 #include "std_msgs/UInt32.h"
+#include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
 
 //Our desired heading, start off at zero.
@@ -13,6 +14,7 @@ int pitch = 90;
 int roll = 180;
 //starting depth is 0
 int depth = 0;
+int svpdepth = 0;
 int go = 0;
 
 ros::Publisher p_heading;
@@ -49,12 +51,12 @@ void roll_cb(int pos)
 }
 void depth_cb(int pos)
 {
-	msgDepth.data = pos;
+	msgDepth.data = (pos * -1);
 	p_depth.publish(msgDepth);
 }
 void svpdepth_cb(int pos)
 {
-	msgSVPDepth.data = pos;
+	msgSVPDepth.data = (pos * -1);
 	p_svpdepth.publish(msgSVPDepth);
 }
 void go_cb(int pos)
