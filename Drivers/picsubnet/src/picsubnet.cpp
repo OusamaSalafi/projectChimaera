@@ -20,10 +20,20 @@ int writePos = 0;     /*Write position in fifoBuffer */
 
 /* Globals - For storing received data */
 std_msgs::Char reed_status;
+std_msgs::Char bt_shutdown;
 std_msgs::Float32 battery_voltage1;
 std_msgs::Float32 battery_voltage2;
 std_msgs::Float32 battery_voltage3;
 std_msgs::Float32 battery_voltage4;
+std_msgs::Float32 ambient_temperature;
+std_msgs::Float32 motor1_temperature;
+std_msgs::Float32 motor2_temperature;
+std_msgs::Float32 fitpc_temperature;
+std_msgs::Float32 router_temperature;
+std_msgs::Float32 roboard_temperature;
+
+std_msgs::Float32 battery1_publish_data;
+std_msgs::Float32 battery2_publish_data;
 
 /*********************************
 ** Generates an NMEA checksum	**
@@ -138,30 +148,30 @@ void msgSearch()
 		    
 		    while(getline(oss, word, ',')) {
 			if (index == 0)
-			{
-				//printf("Reed Switch: %s, ", word.c_str());
 				reed_status.data = (char)atoi(word.c_str());
-			}
 			else if (index == 1)
-			{
-				//printf("Battery 1: %sV, ", word.c_str());
 				battery_voltage1.data = (float)strtod(word.c_str(), NULL);
-			}
 			else if (index == 2)
-			{
-				//printf("Battery 2: %sV\n", word.c_str());
 				battery_voltage2.data = (float)strtod(word.c_str(), NULL);
-			}
 			else if (index == 3)
-			{
-				//printf("Battery 2: %sV\n", word.c_str());
 				battery_voltage3.data = (float)strtod(word.c_str(), NULL);
-			}
 			else if (index == 4)
-			{
-				//printf("Battery 2: %sV\n", word.c_str());
 				battery_voltage4.data = (float)strtod(word.c_str(), NULL);
-			}
+			else if (index == 5)
+				ambient_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 6)
+				motor1_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 7)
+				motor2_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 8)
+				fitpc_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 9)
+				router_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 10)
+				roboard_temperature.data = (float)strtod(word.c_str(), NULL);
+			else if (index == 11)
+				bt_shutdown.data = (char)atoi(word.c_str());
+	
 			index++;
 		    }	
 		}
@@ -267,10 +277,15 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 
 	/*Advertises our various messages*/
 	ros::Publisher pubReedSwitch = picsubnetN.advertise<std_msgs::Char>("reed_switch", 100);
+	ros::Publisher pubBTShutdown = picsubnetN.advertise<std_msgs::Char>("bt_shutdown", 100);
 	ros::Publisher pubBatteryVoltage1 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_1", 100); 
 	ros::Publisher pubBatteryVoltage2 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_2", 100);
-	ros::Publisher pubBatteryVoltage3 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_3", 100); 
-	ros::Publisher pubBatteryVoltage4 = picsubnetN.advertise<std_msgs::Float32>("battery_voltage_4", 100);
+	ros::Publisher pubAmbient = picsubnetN.advertise<std_msgs::Float32>("ambient_temperature", 100); 
+	ros::Publisher pubMotor1 = picsubnetN.advertise<std_msgs::Float32>("motor_temperature_1", 100); 
+	ros::Publisher pubMotor2 = picsubnetN.advertise<std_msgs::Float32>("motor_temperature_2", 100); 
+	ros::Publisher pubFitPC = picsubnetN.advertise<std_msgs::Float32>("fitpc_temperature", 100); 
+	ros::Publisher pubRouter = picsubnetN.advertise<std_msgs::Float32>("router_temperature", 100); 
+	ros::Publisher pubRoboard = picsubnetN.advertise<std_msgs::Float32>("roboard_temperature", 100);
 
 	ros::Rate loop_rate(15); //how many times a second (i.e. Hz) the code should run
 
@@ -288,12 +303,65 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 		// Read data from the port
 		if (read_port() == 1)
 		{
+
+			if (bt_shutdown.data == (uint8_t)1) ROS_ERROR("BLUETOOTH SHUTDOWN ACTIVATED");
+
+			if (reed_status.data == (uint8_t)-1) ROS_WARN("REED SWITCH - NO RESPONSE");
+
+			//There should only ever be 2 batteries connected...
+			int battery_counter = 0;
+
+			if (battery_voltage1.data != (float)-1.0) 
+			{
+				battery1_publish_data.data = battery_voltage1.data;
+				battery_counter++;
+			}
+			if (battery_voltage2.data != (float)-1.0) 
+			{
+				if (battery_counter == 0)
+					battery1_publish_data.data = battery_voltage2.data;
+				else
+					battery2_publish_data.data = battery_voltage2.data;					
+				battery_counter++;
+			}
+			if (battery_voltage3.data != (float)-1.0) 
+			{
+				if (battery_counter == 0)
+					battery1_publish_data.data = battery_voltage3.data;
+				else if (battery_counter == 1)
+					battery2_publish_data.data = battery_voltage3.data;
+				else
+					ROS_WARN("More than 2 batteries detected...");
+				battery_counter++;
+			}
+			if (battery_voltage4.data != (float)-1.0) 
+			{
+				if (battery_counter == 0)
+					battery1_publish_data.data = battery_voltage4.data;
+				else if (battery_counter == 1)
+					battery2_publish_data.data = battery_voltage4.data;
+				else
+					ROS_WARN("More than 2 batteries detected...");					
+				battery_counter++;
+			}
+
+			if (battery_counter < 2)
+				ROS_WARN("Only %d Batteries found", battery_counter);
+			else
+			{
+				pubBatteryVoltage1.publish(battery1_publish_data);
+				pubBatteryVoltage2.publish(battery2_publish_data);
+			}
+
 			//Publish new data
 			pubReedSwitch.publish(reed_status);
-			pubBatteryVoltage1.publish(battery_voltage1);
-			pubBatteryVoltage2.publish(battery_voltage2);
-			pubBatteryVoltage3.publish(battery_voltage3);
-			pubBatteryVoltage4.publish(battery_voltage4);
+			pubBTShutdown.publish(bt_shutdown);
+			pubAmbient.publish(ambient_temperature);
+			pubMotor1.publish(motor1_temperature);
+			pubMotor2.publish(motor2_temperature);
+			pubFitPC.publish(fitpc_temperature);
+			pubRouter.publish(router_temperature);
+			pubRoboard.publish(roboard_temperature);
 		}
 
 		/*Have a snooze*/
