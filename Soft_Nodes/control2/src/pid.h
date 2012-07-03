@@ -24,13 +24,26 @@ float targetPitch=0.0;
 float depth=0.0;
 float targetDepth=0.0;
 float speed=0.0;
+float roll=0.0;
+float targetRoll=0.0;
 unsigned int go = 0;
 
 float left;
 float right;
 
 float KP, KD, KI;
-float KPH,KDH,KIH, KPD, KDD, KID, KPP, KDP, KIP;
+float 	KPH = 2.0,	//heading
+	KDH = 1.0,
+	KIH = 0.1, 
+	KPD = 300.0, 	//depth
+	KDD = 0.1, 
+	KID = 0.1, 
+	KPP = 10.0, 	//pitch
+	KDP = 1.5, 
+	KIP = 0.1,
+	KPR = 2.0,	//roll
+	KDR = 1.0,
+	KIR = 0.1;
 
 int PLUSBUFF, MINUSBUFF;
 int deadZ =0;
@@ -47,6 +60,8 @@ void pitchCallback(const std_msgs::Float32::ConstPtr& compassPitch);
 void targetPitchCallback(const std_msgs::Float32::ConstPtr& pilotPitch);
 void depthCallback(const std_msgs::Float32::ConstPtr& svpDepth);
 void targetDepthCallback(const std_msgs::Float32::ConstPtr& pilotDepth);
+void rollCallback(const std_msgs::Float32::ConstPtr& compassRoll);
+void targetRollCallback(const std_msgs::Float32::ConstPtr& pilotRoll);
 float p(float value, float targetValue);
 float pd(float value, float targetValue);
 float pi(float value, float targetValue);

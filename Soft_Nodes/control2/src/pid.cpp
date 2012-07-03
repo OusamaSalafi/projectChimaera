@@ -242,6 +242,72 @@ int main(int argc, char **argv){
 
 		}
 	}
+	else if(!strcmp(argv[1],"roll")){
+
+		/* Publish */
+
+		ros::Publisher depthRLRateMsg = pidN.advertise<std_msgs::Float32>("depthRLRate", 100);
+		ros::Publisher depthRRRateMsg = pidN.advertise<std_msgs::Float32>("depthRRRate", 100);
+		std_msgs::Float32 depthRLRate;
+		std_msgs::Float32 depthRRRate;
+
+		/* Subscribe */
+
+		ros::Subscriber sub1 = pidN.subscribe("compassRoll", 100, rollCallback);
+		ros::Subscriber sub2 = pidN.subscribe("pilotRoll", 100, targetRollCallback);
+		ros::Subscriber sub3 = pidN.subscribe("pilotGo", 100, goCallback);
+
+		ros::Rate loop_rate(10);
+
+		ROS_INFO("Roll PID Online");
+
+		KP = KPR;
+		KD = KDR;
+		KI = KIR;
+
+		while(ros::ok()){
+
+			if(once){
+				while(go != 1){
+					ros::spinOnce();
+					ROS_WARN("%s waiting for go",argv[1]);
+					ros::Duration(1.0).sleep();
+					depthRLRate.data = 0.0;
+					depthRRRate.data = 0.0;
+					depthRLRateMsg.publish(depthRLRate);
+					depthRRRateMsg.publish(depthRRRate);
+				}
+				ROS_INFO("%s given the go",argv[1]);
+				loop_rate.sleep();
+				once = 0;
+			}
+
+			ros::spinOnce();
+
+			tmp = pd(roll,targetRoll);
+
+			tmp *= -1.0f;
+
+			depthRLRate.data = tmp;
+			depthRRRate.data = tmp * 0.75;
+
+			if(depthRLRate.data < 0.0){	//if the nose is high
+				depthRLRate.data = 0.0;	//use bouyancy
+			}
+			if(depthRRRate.data < 0.0){	//if the nose is high
+				depthRRRate.data = 0.0;	//use bouyancy
+			}
+			
+			depthRLRateMsg.publish(depthRLRate);
+			depthRRRateMsg.publish(depthRRRate);
+
+			ROS_DEBUG("Roll PID Left %.3f",depthRLRate.data);
+			ROS_DEBUG("Roll PID Right %.3f",depthRRRate.data);
+
+			loop_rate.sleep();
+
+		}
+	}
 	else{
 		ROS_ERROR("Please Enter 'heading', 'depth' or 'pitch'. Alternatively program some software for %s.",argv[1]);
 	}
@@ -323,6 +389,24 @@ void depthCallback(const std_msgs::Float32::ConstPtr& svpDepth){
 
 void targetDepthCallback(const std_msgs::Float32::ConstPtr& pilotDepth){
 	targetDepth = pilotDepth->data;
+	return;
+}
+
+/*************************************************
+** Returns the compass pitch			**
+*************************************************/
+
+void rollCallback(const std_msgs::Float32::ConstPtr& compassRoll){
+	roll = compassRoll->data;
+	return;
+}
+
+/*************************************************
+** Returns the target pitch			**
+*************************************************/
+
+void targetRollCallback(const std_msgs::Float32::ConstPtr& pilotRoll){
+	targetRoll = pilotRoll->data;
 	return;
 }
 
@@ -494,8 +578,8 @@ float pid(float value, float targetValue){
 	char *configpath = getenv("SUB_CONFIG_PATH");
 	if (configpath == NULL)
 	{
-	std::cout << "Problem getting SUB_CONFIG_PATH variable." << std::endl;
-	exit(-1);
+	std::cout << "Problem getting SUB_CONFIG_PATH variable. Reverting to defaults." << std::endl;
+	//exit(-1);
 	}
 	//filepath=configpath+filename
 	sprintf(file_path, "%s%s", configpath,	file_name);

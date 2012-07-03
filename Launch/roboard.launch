@@ -1,0 +1,9 @@
+<launch>
+	<!--	DISPLAY NAME	NODE NAME	RUN NAME	ARGUMENTS	-->
+	<node name="Motors"	pkg="motors"	type="motors"			/>
+	<node name="GO"		pkg="adc"	type="adc"			/>
+	
+	<node name="SVP"	pkg="svp"	type="svp"			/>
+
+	
+</launch>

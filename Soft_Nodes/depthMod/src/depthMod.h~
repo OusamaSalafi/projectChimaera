@@ -5,11 +5,13 @@
 
 /* Globals */
 
-float depthRateDepth, depthRatePitch;
+float depthRateDepth, depthRatePitch, depthRollRight, depthRollLeft;
 
 unsigned int depthChange;
 
 /* Function Declerations */
 
-void depthCallback(const std_msgs::Float32::ConstPtr& backDRate);
-void pitchCallback(const std_msgs::Float32::ConstPtr& backPRate);
+void depthCallback(const std_msgs::Float32::ConstPtr& depthDRate);
+void pitchCallback(const std_msgs::Float32::ConstPtr& depthPRate);
+void rollLeftCallback(const std_msgs::Float32::ConstPtr& rollLRate);
+void rollRightCallback(const std_msgs::Float32::ConstPtr& rollRPRate);

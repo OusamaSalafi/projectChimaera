@@ -36,6 +36,9 @@ int main(int argc, char **argv){
 	ros::Subscriber sub4 = pidRampN.subscribe("depthRRate", 100, depthRRateCallback);
 	ros::Subscriber sub5 = pidRampN.subscribe("depthLRate", 100, depthLRateCallback);
 	ros::Subscriber sub6 = pidRampN.subscribe("pilotSpeed", 100, speedCallback);
+	ros::Subscriber sub7 = pidRampN.subscribe("compassRoll", 100, rollCallback);
+	
+	ros::Subscriber sub8 = pidRampN.subscribe("pilotGo", 100, goCallback);
 
 	ros::Rate loop_rate(25);
 
@@ -68,6 +71,14 @@ int main(int argc, char **argv){
 	return 0;
 }
 
+/*************************************************
+** Returns the go signal			**
+*************************************************/
+
+void goCallback(const std_msgs::UInt32::ConstPtr& pilotGo){
+	go = pilotGo->data;
+	return;
+}
 
 /*************************************************
 ** Get pitch pwm target value			**
@@ -122,7 +133,14 @@ void speedCallback(const std_msgs::Float32::ConstPtr& pilotSpeed){
 	speed = pilotSpeed->data;
 	return;
 }
+/*************************************************
+** Returns the compass pitch			**
+*************************************************/
 
+void rollCallback(const std_msgs::Float32::ConstPtr& compassRoll){
+	roll = compassRoll->data;
+	return;
+}
 /*************************************************
 ** Slides the current PWM value until it is	**
 ** matching the target PWM value. This should	**
@@ -204,6 +222,36 @@ unsigned int slewer(unsigned int pos){
 			}
 		}
 	}
+	else if(pos == DEPTHL)
+	{
+		if(roll < 0 && go == 1)
+			currentRate[pos] = currentRate[pos] + ((roll * -1) * ROLLBONUS);	
+
+	
+		if(currentRate[pos] > MAXSPEEDD){
+			currentRate[pos] = MAXSPEEDD;
+		}
+
+		if(currentRate[pos] < MINSPEEDD){
+			currentRate[pos] = MINSPEEDD;
+		}	
+	
+	}
+	else if(pos == DEPTHR)
+	{
+	
+		if(roll > 0 && go == 1)
+			currentRate[pos] = currentRate[pos] + (roll * ROLLBONUS);
+	
+		if(currentRate[pos] > MAXSPEEDD){
+			currentRate[pos] = MAXSPEEDD;
+		}
+
+		if(currentRate[pos] < MINSPEEDD){
+			currentRate[pos] = MINSPEEDD;
+		}	
+	
+	}	
 	else{
 		if(currentRate[pos] > MAXSPEEDD){
 			currentRate[pos] = MAXSPEEDD;

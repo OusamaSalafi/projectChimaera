@@ -1,0 +1,14 @@
+<launch>
+	<!--	DISPLAY NAME	NODE NAME	RUN NAME	ARGUMENTS	-->
+	<node name="Heading"	pkg="control2"	type="pid"	args="heading"	/>
+	<node name="Depth"	pkg="control2"	type="pid"	args="depth"	/>
+	<node name="Pitch"	pkg="control2"	type="pid"	args="pitch"	/>
+	<!-- <node name="Roll"	pkg="control2"	type="pid"	args="roll"	/> -->
+	<node name="DepthMod"	pkg="depthMod"	type="depthMod"			/>
+	<node name="PIDRamp"	pkg="pidRamp"	type="slew"			/>
+
+	<node name="pilot"	pkg="pilot2"	type="spammer"			/> 
+	<node name="IMU"	pkg="vNavIMU"	type="vNavIMU"			/>
+
+	
+</launch>
