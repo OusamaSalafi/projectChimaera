@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 
 	ros::Subscriber sub1 = depthModN.subscribe("depthDRate", 100, depthCallback);
 	ros::Subscriber sub2 = depthModN.subscribe("depthPRate", 100, pitchCallback);
-
+	
 	ros::Rate loop_rate(10);
 
 	while(ros::ok()){
@@ -77,3 +77,4 @@ void pitchCallback(const std_msgs::Float32::ConstPtr& depthPRate){
 	depthRatePitch = depthPRate->data;
 	return;
 }
+
