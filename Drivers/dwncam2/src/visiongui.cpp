@@ -19,7 +19,7 @@ int satm = 127;
 int brim = 127;
 
 //
-char* ass = "fwdcam_config.ini";
+char* ass = "dwncam2_config.ini";
 char file_path[300];
 
 //Callback function for trackbars

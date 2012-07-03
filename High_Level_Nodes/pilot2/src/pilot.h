@@ -96,3 +96,6 @@ void adcGoCallback(const std_msgs::UInt32::ConstPtr& adcGo);
 void sonarFCallback(const std_msgs::Float32::ConstPtr& sonarFront);
 void sonarDCallback(const std_msgs::UInt32::ConstPtr& sonarDone);
 void sonarRCallback(const std_msgs::Float32::ConstPtr& sonarRight);
+void pipeXCallback(const std_msgs::UInt32::ConstPtr& PipeX);
+void pipeYCallback(const std_msgs::UInt32::ConstPtr& PipeY);
+void pipethetaCallback(const std_msgs::Float32::ConstPtr& Pipetheta);

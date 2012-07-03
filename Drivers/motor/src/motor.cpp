@@ -203,7 +203,11 @@ void yawLeftCallback(const std_msgs::UInt32::ConstPtr& pidRampYawLeft){
 *************************************************/
 
 void pitchCallback(const std_msgs::UInt32::ConstPtr& pidRampPitch){
+	
 	pitchPWM = pidRampPitch->data;
+//Pitch motor doesn't want to be run above 80% for more than 15sec
+//so limit the output
+	if(pitchPWM > 1900) pitchPWM = 1900;
 
 	ROS_DEBUG("Pitch: %u",pitchPWM);
 	

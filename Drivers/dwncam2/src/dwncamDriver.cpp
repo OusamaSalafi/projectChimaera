@@ -23,7 +23,7 @@
 //              1 = VIDEO
 //              2 = IMAGE
 //              3 = IPCAM
-#define INPUT_MODE		3
+#define INPUT_MODE		1
 #define VIDEO_FILENAME	"Test.avi"
 #define IMAGE_FILENAME	"Test.jpg"
 
@@ -865,7 +865,15 @@ public:
 			}
 
 		} else{
-
+				pipe_centre_.x = -1;
+				pipe_centre_.y = -1;
+				// Publish -1 signifying no pipe
+				//X 
+				pipe_X_.data = pipe_centre_.x; 
+				p_X_.publish(pipe_X_);
+				//Y
+				pipe_Y_.data = pipe_centre_.y; 
+				p_Y_.publish(pipe_Y_);
 			// Reset The Used Length & Index Of The Moving Average Arrays
 			moving_length_ = 0;
 			moving_index_ = 0;

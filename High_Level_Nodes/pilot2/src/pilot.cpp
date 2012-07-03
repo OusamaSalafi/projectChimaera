@@ -5,6 +5,13 @@
 
 #include "pilot.h"
 
+int pipe_Y;
+int pipe_X;
+float pipe_angle;
+
+std_msgs::Float32 pilotHeading;
+std_msgs::Float32 pilotSpeed;
+
 int main(int argc, char **argv){ //we need argc and argv for the rosInit function
 
 	int counter;
@@ -27,11 +34,10 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 
 	/*Sets up the message structures*/
 
-	std_msgs::Float32 pilotHeading;
+
 	std_msgs::Float32 pilotDepth;
 	std_msgs::Float32 pilotPitch;
 	std_msgs::UInt32 pilotOkGo;
-	std_msgs::Float32 pilotSpeed;
 	std_msgs::UInt32 alertFront;
 	std_msgs::UInt32 fullScan;
 
@@ -47,7 +53,10 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	ros::Subscriber sub5 = pilotN.subscribe("sonarFront", 	100, sonarFCallback);
 	ros::Subscriber sub6 = pilotN.subscribe("sonarRight", 	100, sonarRCallback);
 	ros::Subscriber sub7 = pilotN.subscribe("sonarDone", 	100, sonarDCallback);
-
+	//Pipe values
+	ros::Subscriber sub8 = pilotN.subscribe("pipe_X", 	100, pipeXCallback);
+	ros::Subscriber sub9 = pilotN.subscribe("pipe_Y", 	100, pipeYCallback);
+	ros::Subscriber sub10 = pilotN.subscribe("pipe_theta", 	100, pipethetaCallback);
 
 	//ros::Rate loop_rate(10); //how many times a second (i.e. Hz) the code should run
 
@@ -251,6 +260,90 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 	printf("Shutting Down\n");
 
 	return 0;
+}
+
+int map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+	return (int)((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+}
+
+/*************************************************
+ ** Follows the pipe
+ * Uses values published by the dwncam2 node
+ * As the values are updated the section that
+ * is updated changes
+ * X and angle control the orientation
+ * Y controls the speed
+ ************************************************/
+void pipe_follower()
+{
+	int speed = 50;
+	float pipe_heading;
+	static int average_heading[9] = {0};
+	static int counter = 0;
+	int avg = 0;
+	if (pipe_X != 255 && pipe_Y != 255)
+	{
+		//float speed_multiplier;
+		//Look at the Y value and act
+		//Modifies the speed of the sub based on the Y position of the pipe centre
+		speed = map(pipe_Y, -100, 100, 25, 75);
+		//Look at the X value and act
+		pipe_heading = map(pipe_X, -100, 100, (int)(heading - 45.0), (int)(heading + 45.0));
+		//heading is current heading + pipe angle
+		pipe_heading = heading + pipe_angle;
+		//Keep an average of pipe headings so a new mad value
+		//keep a counter
+		if(counter == 10) counter = 0;
+		//store the current value
+		average_heading[counter] = pipe_heading;
+		//find the average
+		for(int i = 0; i < 10; i++)
+		{
+			avg += average_heading[i];
+		}
+		
+		avg = avg / 10;
+		//check to see if the new heading is within ten of the average
+		if((pipe_heading > avg + 10) || (pipe_heading < avg - 10))
+		{
+				pipe_heading = avg;
+		}
+		//doesn't send us flying off into the void
+		//assign the final values to pilotspeed && pilotheading
+		pilotHeading.data = pipe_heading;
+		pilotSpeed.data = speed;
+		return;
+	}
+}
+
+/*************************************************
+** Returns the pipe X pos			**
+*************************************************/
+
+void pipeXCallback(const std_msgs::UInt32::ConstPtr& PipeX){
+	pipe_X = PipeX->data;
+	if(pipe_X != 255) pipe_X -= 100;
+	return;
+}
+
+/*************************************************
+** Returns the pipe Y pos			**
+*************************************************/
+
+void pipeYCallback(const std_msgs::UInt32::ConstPtr& PipeY){
+	pipe_Y = PipeY->data;
+	if(pipe_Y != 255) pipe_Y -= 100;
+	return;
+}
+
+/*************************************************
+** Returns the pipe angle			**
+*************************************************/
+
+void pipethetaCallback(const std_msgs::Float32::ConstPtr& PipeTheta){
+	pipe_angle = PipeTheta->data;
+	return;
 }
 
 /*************************************************
