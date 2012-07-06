@@ -8,7 +8,7 @@
 	<node name="PIDRamp"	pkg="pidRamp"	type="slew"			/>
 
 	<node name="pilot"	pkg="pilot2"	type="spammer"			/> 
-	<node name="IMU"	pkg="vNavIMU"	type="vNavIMU"			/>
+	<!-- <node name="IMU"	pkg="vNavIMU"	type="vNavIMU"			/> -->
 
 	
 </launch>

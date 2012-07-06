@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
 	ros::spinOnce();
 	//Set loop rate (in Hz);
-	ros::Rate r(100);
+	ros::Rate r(80);
 	while (ros::ok())
 	{
 
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 		printf("pilotPitch:\t");
 		drawLine(pP, 0, 180);
 		//pitch motors
-		printf("Pitch:\t");
+		printf("Pitch:\t\t");
 		drawLine(mp, 0, 100);
 		
 		printf("pilotRoll:\t");

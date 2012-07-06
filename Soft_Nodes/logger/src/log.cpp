@@ -28,6 +28,8 @@ provided.
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 
+#include <nav_msgs/Odometry.h>
+
 
 
 void xCallback(const std_msgs::Int32::ConstPtr& logX);
@@ -51,8 +53,9 @@ int main(int argc, char **argv)
 	
 	ros::NodeHandle n;
 	//Set up subscriptions
-	ros::Subscriber sub1 = n.subscribe("logX", 100, xCallback);
-	ros::Subscriber sub2 = n.subscribe("logY", 100, yCallback);
+	ros::Subscriber sub1 = n.subscribe("odom", 0, odomCallBack);
+	//ros::Subscriber sub1 = n.subscribe("logX", 100, xCallback);
+	//ros::Subscriber sub2 = n.subscribe("logY", 100, yCallback);
 	ros::Subscriber sub3 = n.subscribe("svpDepth", 100, zCallback);
 	ros::Subscriber sub4 = n.subscribe("logAction", 100, aCallback);
 	
@@ -150,3 +153,11 @@ void aCallback(const std_msgs::String::ConstPtr& logAction)
 
 	return;
 }
+void odomCallBack (const nav_msgs::Odometry::ConstPtr& odomData){
+
+    	odom_pose.header.frame_id = "odom";
+    	odom_pose.header.stamp = odomData->header.stamp;
+	odom_pose.pose.position = odomData->pose.pose.position;
+	odom_pose.pose.orientation = odomData->pose.pose.orientation;
+	return;
+	}

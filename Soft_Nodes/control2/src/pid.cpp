@@ -242,6 +242,10 @@ int main(int argc, char **argv){
 
 		}
 	}
+	/* not using this at the moment for roll control, we're using the angle and adding the value on the opposite motor in pidRamp
+	*
+	*
+	* ************************************************************************ */
 	else if(!strcmp(argv[1],"roll")){
 
 		/* Publish */

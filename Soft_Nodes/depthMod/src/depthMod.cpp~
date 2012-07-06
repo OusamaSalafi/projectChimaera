@@ -17,7 +17,7 @@ int main(int argc, char **argv){
 
 	/* Publish */
 
-	//ros::Publisher backMsg = depthModN.advertise<std_msgs::Float32>("backRate", 100);
+	ros::Publisher backMsg = depthModN.advertise<std_msgs::Float32>("backRate", 100);
 	ros::Publisher depthRMsg = depthModN.advertise<std_msgs::Float32>("depthRRate", 100);
 	ros::Publisher depthLMsg = depthModN.advertise<std_msgs::Float32>("depthLRate", 100);
 
@@ -77,19 +77,4 @@ void pitchCallback(const std_msgs::Float32::ConstPtr& depthPRate){
 	depthRatePitch = depthPRate->data;
 	return;
 }
-/*************************************************
-** Get what the pitch is doing to the motor	**
-*************************************************/
 
-void rollLeftCallback(const std_msgs::Float32::ConstPtr& rollLRate){
-	depthRollLeft = rollLRate->data;
-	return;
-}
-/*************************************************
-** Get what the pitch is doing to the motor	**
-*************************************************/
-
-void rollRightCallback(const std_msgs::Float32::ConstPtr& rollRRate){
-	depthRollRight = rollRRate->data;
-	return;
-}

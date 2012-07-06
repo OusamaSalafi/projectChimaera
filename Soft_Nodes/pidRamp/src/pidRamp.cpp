@@ -225,7 +225,7 @@ unsigned int slewer(unsigned int pos){
 	else if(pos == DEPTHL)
 	{
 		if(roll < 0 && go == 1)
-			currentRate[pos] = currentRate[pos] + ((roll * -1) * ROLLBONUS);	
+			currentRate[pos] = currentRate[pos] + ((roll * -1) * ROLLBONUS); //simple p code for roll	
 
 	
 		if(currentRate[pos] > MAXSPEEDD){
@@ -241,7 +241,7 @@ unsigned int slewer(unsigned int pos){
 	{
 	
 		if(roll > 0 && go == 1)
-			currentRate[pos] = currentRate[pos] + (roll * ROLLBONUS);
+			currentRate[pos] = currentRate[pos] + (roll * ROLLBONUS); //simple p code for roll
 	
 		if(currentRate[pos] > MAXSPEEDD){
 			currentRate[pos] = MAXSPEEDD;

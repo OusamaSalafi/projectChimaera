@@ -14,16 +14,20 @@
 #define HEIGHT 	180
 #define DEPTH	255
 
+#define SONARRANGE 75.0
+#define SONARBINS 90
+
 #define PI 3.14159265
 
 float genRandFloat( float a, float b );
 void bearingCB(const std_msgs::Float32::ConstPtr& sonarBearing);
 void binsArrCB(const std_msgs::Int32MultiArray::ConstPtr& sonarBinsArr);
-void pixelPlace( float theta, unsigned int distance, unsigned int depth );
+void pixelPlace( float theta, float distance, unsigned int depth );
 
 float imgx, imgy, imgz;
 float bearing, oldbearing;
 int binsArr[90];
+float sonarDist = 0;
 
 int main(int argc, char **argv)
 {
@@ -44,6 +48,8 @@ int main(int argc, char **argv)
 	std_msgs::Float32MultiArray array;
 
 	ros::Rate r(30);
+	
+	sonarDist = SONARRANGE / SONARBINS;
 
 	while (ros::ok())
 	{
@@ -52,7 +58,7 @@ int main(int argc, char **argv)
 		array.data.clear();
 		for(int i = 0; i < 90; i ++)
 		{
-			pixelPlace(bearing, i, binsArr[i]);
+			pixelPlace(bearing, float(i), binsArr[i]);
 
 			
 
@@ -121,9 +127,10 @@ return;
  * add on half width and half height so it's centred and some things need
  * flipping to make them right 
  * *********************************************************/
-void pixelPlace( float theta, unsigned int distance, unsigned int depth )
+void pixelPlace( float theta, float distance, unsigned int depth )
 {
 
+	distance = sonarDist * distance;  //get the actual distance
 	float x, y;
 	theta /= 17.7777778;
 	if( theta > 0 && theta < 90 )

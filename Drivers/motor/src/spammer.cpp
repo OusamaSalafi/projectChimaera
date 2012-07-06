@@ -31,6 +31,7 @@ std_msgs::UInt32 msgGO;
 void depth_right_cb(int pos)
 {
 	msgDR.data = pos+1000;
+	p_depth_right.publish(msgDR);
 }
 
 void depth_left_cb(int pos)
@@ -42,19 +43,7 @@ void depth_left_cb(int pos)
 void yaw_right_cb(int pos)
 {
 	//printf("\nYaw right = %d\n", pos+1000);
-	//msgYR.data = pos+1000;
-	switch (pos)
-	{
-			case 0: 
-				msgYR.data = 1000;
-				break;
-			case 1:
-				msgYR.data = 1500;
-				break;
-			case 2: 
-				msgYR.data = 2000;
-				break;
-	}
+	msgYR.data = pos+1000;
 	p_yaw_right.publish(msgYR);
 }
 
@@ -67,6 +56,20 @@ void yaw_left_cb(int pos)
 void pitch_cb(int pos)
 {
 	msgP.data = pos+1000;
+/*	switch (pos)
+	{
+		case 0: 
+			msgP.data = 1000;
+			break;
+		case 1:
+			msgP.data = 1500;
+			break;
+		case 2: 
+			msgP.data = 2000;
+			break;
+	}
+*/
+	p_pitch.publish(msgP);
 }
 
 
@@ -98,7 +101,7 @@ int main(int argc, char **argv)
 	//Create track Bars
 	cvCreateTrackbar("Depth Right (CH1)","MotorSpammer", &depth_right,1000,&depth_right_cb);
 	cvCreateTrackbar("Depth Left (CH2)_","MotorSpammer", &depth_left,1000,&depth_left_cb);
-	cvCreateTrackbar("Yaw Right (CH3)___","MotorSpammer", &yaw_right,2,&yaw_right_cb);	
+	cvCreateTrackbar("Yaw Right (CH3)___","MotorSpammer", &yaw_right,1000,&yaw_right_cb);	
 	cvCreateTrackbar("Yaw Left (CH4)__","MotorSpammer", &yaw_left,1000,&yaw_left_cb);
 	cvCreateTrackbar("PITCH (CH5)______","MotorSpammer", &pitch,1000,&pitch_cb);	
 	
@@ -117,7 +120,7 @@ int main(int argc, char **argv)
 	//		p_yaw_right.publish(msgYR);
 	//		p_yaw_left.publish(msgYL);
 	//		p_pitch.publish(msgP);
-	//		p_go.publish(msgGO);
+			p_go.publish(msgGO);
 	
 	}
 }

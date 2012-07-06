@@ -114,7 +114,7 @@ int main(int argc, char **argv){
 		
 		/* Publish */
 
-		ros::Publisher pitchRateMsg = pidN.advertise<std_msgs::Float32>("pitchRate", 100);
+		ros::Publisher pitchRateMsg = pidN.advertise<std_msgs::Float32>("backDRate", 100);
 		ros::Publisher depthDRateMsg = pidN.advertise<std_msgs::Float32>("depthDRate", 100);
 
 		std_msgs::Float32 pitchRate;
@@ -190,8 +190,10 @@ int main(int argc, char **argv){
 
 		/* Publish */
 
+		ros::Publisher pitchRateMsg = pidN.advertise<std_msgs::Float32>("backPRate", 100);
 		ros::Publisher depthPRateMsg = pidN.advertise<std_msgs::Float32>("depthPRate", 100);
 		std_msgs::Float32 depthPRate;
+		std_msgs::Float32 backPRate;
 
 		/* Subscribe */
 
@@ -242,6 +244,10 @@ int main(int argc, char **argv){
 
 		}
 	}
+	/* not using this at the moment for roll control, we're using the angle and adding the value on the opposite motor in pidRamp
+	*
+	*
+	* ************************************************************************ */
 	else if(!strcmp(argv[1],"roll")){
 
 		/* Publish */
@@ -253,8 +259,8 @@ int main(int argc, char **argv){
 
 		/* Subscribe */
 
-		ros::Subscriber sub1 = pidN.subscribe("compassRoll", 100, pitchCallback);
-		ros::Subscriber sub2 = pidN.subscribe("pilotRoll", 100, targetPitchCallback);
+		ros::Subscriber sub1 = pidN.subscribe("compassRoll", 100, rollCallback);
+		ros::Subscriber sub2 = pidN.subscribe("pilotRoll", 100, targetRollCallback);
 		ros::Subscriber sub3 = pidN.subscribe("pilotGo", 100, goCallback);
 
 		ros::Rate loop_rate(10);
@@ -389,6 +395,24 @@ void depthCallback(const std_msgs::Float32::ConstPtr& svpDepth){
 
 void targetDepthCallback(const std_msgs::Float32::ConstPtr& pilotDepth){
 	targetDepth = pilotDepth->data;
+	return;
+}
+
+/*************************************************
+** Returns the compass pitch			**
+*************************************************/
+
+void rollCallback(const std_msgs::Float32::ConstPtr& compassRoll){
+	roll = compassRoll->data;
+	return;
+}
+
+/*************************************************
+** Returns the target pitch			**
+*************************************************/
+
+void targetRollCallback(const std_msgs::Float32::ConstPtr& pilotRoll){
+	targetRoll = pilotRoll->data;
 	return;
 }
 

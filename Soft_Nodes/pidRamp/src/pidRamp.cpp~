@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 	ros::Subscriber sub6 = pidRampN.subscribe("pilotSpeed", 100, speedCallback);
 	ros::Subscriber sub7 = pidRampN.subscribe("compassRoll", 100, rollCallback);
 	
-	ros::Subscriber sub8 = pidN.subscribe("pilotGo", 100, goCallback);
+	ros::Subscriber sub8 = pidRampN.subscribe("pilotGo", 100, goCallback);
 
 	ros::Rate loop_rate(25);
 

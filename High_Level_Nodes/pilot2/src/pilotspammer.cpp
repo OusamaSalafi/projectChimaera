@@ -16,6 +16,7 @@ int roll = 180;
 int depth = 0;
 int svpdepth = 0;
 int go = 0;
+int compasspitch = 90;
 
 ros::Publisher p_heading;
 ros::Publisher p_pitch;
@@ -23,6 +24,7 @@ ros::Publisher p_roll;
 ros::Publisher p_depth;
 ros::Publisher p_svpdepth;
 ros::Publisher p_go;
+ros::Publisher p_compasspitch;
 
 std_msgs::Float32 msgHeading;
 std_msgs::Float32 msgPitch;
@@ -30,6 +32,7 @@ std_msgs::Float32 msgRoll;
 std_msgs::Float32 msgDepth;
 std_msgs::Float32 msgSVPDepth;
 std_msgs::UInt32 msgGo;
+std_msgs::Float32 msgCompassPitch;
 
 //callback functions for each slider
 
@@ -43,6 +46,11 @@ void pitch_cb(int pos)
 {
 	msgPitch.data = pos;
 	p_pitch.publish(msgPitch);
+}
+void compasspitch_cb(int pos)
+{
+	msgCompassPitch.data = pos -90;
+	p_compasspitch.publish(msgCompassPitch);
 }
 void roll_cb(int pos)
 {
@@ -81,16 +89,18 @@ int main(int argc, char **argv)
 	p_svpdepth = pilotspammer_nh.advertise<std_msgs::Float32>("svpDepth", 100);
 	
 	p_go = pilotspammer_nh.advertise<std_msgs::UInt32>("pilotGo", 100);
+	
+	p_compasspitch = pilotspammer_nh.advertise<std_msgs::Float32>("compassPitch", 100);
 		
 	//create the window
 	cvNamedWindow("Pilot Spammer",0);
 	
 	//Create track Bars
 	cvCreateTrackbar("Heading","Pilot Spammer", &heading,360,&heading_cb);
-	cvCreateTrackbar("Pitch","Pilot Spammer", &pitch,180,&pitch_cb);
+	cvCreateTrackbar("P Pitch","Pilot Spammer", &pitch,180,&pitch_cb);
+	cvCreateTrackbar("C Pitch", "Pilot Spammer", &compasspitch, 1800, &compasspitch_cb);
 	cvCreateTrackbar("Roll","Pilot Spammer", &roll,360,&roll_cb);
 	cvCreateTrackbar("--- Depth","Pilot Spammer", &depth,10,&depth_cb);
-	
 	cvCreateTrackbar("SVP Depth","Pilot Spammer", &svpdepth,10,&svpdepth_cb);
 	
 	cvCreateTrackbar("Go","Pilot Spammer", &go,1,&go_cb);
