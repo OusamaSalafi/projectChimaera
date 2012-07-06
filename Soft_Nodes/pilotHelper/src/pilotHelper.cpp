@@ -58,19 +58,18 @@ int main(int argc, char** argv){
   ros::Subscriber sub1 = n.subscribe("odom", 0, odomCallBack);
   ros::Subscriber sub2 = n.subscribe("gotoXY", 100, pilotCallBack);
   ros::Subscriber sub3 = n.subscribe("map", 100, mapCallBack);
-
   ros::Rate r(1.0);
   
   double nowx = 0.0, nowy = 0.0, desiredx = 0.0, desiredy = 0.0, 
   Adj = 0.0, Opp = 0.0, Hyp = 0.0, Theta = 0.0, initHyp = 0.0, oldPilotx = 0.0, oldPiloty = 0.0, desiredRate = 0.0;
   bool changed = false;
-  while(n.ok()){
+  while(n.ok()){    
   	ros::spinOnce();
   	current_time = ros::Time::now();
-  	nowx = 0.0;//odom_pose.pose.position.x;
-  	nowy = 0.0;//odom_pose.pose.position.y;
-  	desiredx = 3.0;//pilot_pose.pose.position.x;
-  	desiredy = 7.0;//pilot_pose.pose.position.y;
+  	nowx = odom_pose.pose.position.x;
+  	nowy = odom_pose.pose.position.y;
+  	desiredx = pilot_pose.pose.position.x;
+  	desiredy = pilot_pose.pose.position.y;
   	if ((desiredx != oldPilotx) || (desiredy != oldPiloty)){
   		changed = true;
   	}
@@ -89,15 +88,22 @@ int main(int argc, char** argv){
   		Theta = (Theta *-1) + 90; //into heading type values.
   	} else   	if ((Opp < 0) && (Adj < 0)){
   		Theta = (Theta *-1) - 90;
-  	}
+  	}    r.sleep();
   	if (changed){
   		oldPilotx = desiredx;
-  		oldPiloty = desiredy;
-  		initHyp = Hyp-3;
+  		    r.sleep();oldPiloty = desiredy;
+  		initHyp = Hyp;
   		changed = false;
   	}
   	desiredRate = (initHyp / Hyp)*100;
+  	if (desiredRate >= 75){
+  	desiredRate = 75;
+  	}
+  	if (desiredRate <= 5){
+  	desiredRate = 0;
+  	}
   	printf("Adj: %f Opp: %f Hyp: %f DesHyp: %f Th: %f Desired Rate: %f\n" ,Adj, Opp, Hyp, initHyp, Theta, desiredRate);
+  	r.sleep();
   }
   }
   	
