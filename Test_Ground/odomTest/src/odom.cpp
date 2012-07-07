@@ -4,27 +4,53 @@
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
-#define ACCXTHRESH 0.01
-#define ACCYTHRESH 0.01
-#define VELOCITYSR 1000 //250
-#define	VELOCITYTHRESHY 0.001
-#define	VELOCITYTHRESHX 0.000005
-#define VELDEADZONE 0.000005
+#include "inifile.h"
+#include "std_msgs/Char.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/Int32.h"
+//NOW IN INI FILE
+//#define ACCXTHRESH 0.01
+//#define ACCYTHRESH 0.01
+//#define VELOCITYSR 1000 //250
+//#define	VELOCITYTHRESHY 0.001
+//#define	VELOCITYTHRESHX 0.000005
+//#define VELDEADZONE 0.000005
   
-  
-  geometry_msgs::Quaternion orient;
-  geometry_msgs::Vector3 angVel;
-  geometry_msgs::Vector3 linAcc;
+geometry_msgs::Quaternion orient;
+geometry_msgs::Vector3 angVel;
+geometry_msgs::Vector3 linAcc;
+
 void IMUCallBack (const sensor_msgs::Imu::ConstPtr& IMUData);
 
-int main(int argc, char** argv){
-  ros::init(argc, argv, "odometry_publisher");
+char* odomIni = "odom_config.ini";
 
-  ros::NodeHandle n;
-  ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-  ros::Subscriber sub1 = n.subscribe("IMU", 0, IMUCallBack);
-  tf::TransformBroadcaster odom_broadcaster;
- 
+char file_path[300];
+
+int main(int argc, char** argv){
+ros::init(argc, argv, "odometry_publisher");
+ros::NodeHandle n;
+ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
+ros::Subscriber sub1 = n.subscribe("IMU", 0, IMUCallBack);
+tf::TransformBroadcaster odom_broadcaster;
+CIniFile ini;
+//Read in the environmental variable that stores the location of the config files
+char *configpath = getenv("SUB_CONFIG_PATH");
+if (configpath == NULL)
+{
+	std::cout << "Problem getting SUB_CONFIG_PATH variable." << std::endl;
+	exit(-1);
+	}
+	//filepath=configpath+filename
+sprintf(file_path, "%s%s", configpath, odomIni);
+	/* Read Config File */
+ini.Load(file_path);
+
+double ACCXTHRESH = atof(ini.GetKeyValue("ACC" , "accx_thresh").c_str());
+double ACCYTHRESH = atof(ini.GetKeyValue("ACC" , "accy_thresh").c_str());			
+int VELOCITYSR = atoi(ini.GetKeyValue("VEL" , "velsr").c_str());
+double VELOCITYTHRESHY = atof(ini.GetKeyValue("VEL" , "vely_thresh").c_str());
+double VELOCITYTHRESHX = atof(ini.GetKeyValue("VEL" , "velx_thresh").c_str());
+double VELDEADZONE = atof(ini.GetKeyValue("VEL" , "vel_deadzone").c_str());
 
   double vx = 0.0;
   double vy = 0.0;
@@ -131,7 +157,7 @@ int main(int argc, char** argv){
     
 
     printf("T = %f \n", dt);
-    printf("X velocity = %+#7.2f \n", vx);   
+    printf("X velocity thresh = %f \n", VELOCITYTHRESHY);   
     printf("Y velocity = %+#7.2f \n", vy);
     printf("angular velocity = %+#7.2f\n\n", vth);
     

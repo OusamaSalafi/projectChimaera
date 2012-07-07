@@ -1,0 +1,11 @@
+;Config file for odometry threshold values
+[ACC]
+accy_thresh = 0.01 
+accx_thresh = 0.01 
+
+[VEL]
+velsr = 1000
+vely_thresh = 0.00008931
+velx_thresh = 0.001
+vel_deadzone = 0.000005
+

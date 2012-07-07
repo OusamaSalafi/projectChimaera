@@ -10,7 +10,6 @@
   <url>http://ros.org/wiki/odomTest</url>
   <depend package="roscpp"/>
   <depend package="tf"/>
-  <depend package="INIFile"/>
   <depend package="nav_msgs"/>
 
 </package>
