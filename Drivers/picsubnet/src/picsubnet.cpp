@@ -14,6 +14,8 @@
 
 #include <sstream>
 
+int led_test = 0;
+
 int fd; 	      /* File descriptor for the port */
 char fifoBuffer[255]; /* First in first out buffer where data is stored */
 int writePos = 0;     /*Write position in fifoBuffer */
@@ -228,7 +230,7 @@ char read_port(void){
 int open_port(void){	
 
 	// Open the USB port
-	fd = open("/dev/ttyUSB0", O_RDWR | O_NDELAY | O_NOCTTY);
+	fd = open("/dev/ttyUSB1", O_RDWR | O_NDELAY | O_NOCTTY);
 	if (fd == -1){
 		ROS_ERROR("Could not open port");
 		return 0;
@@ -269,6 +271,24 @@ void config_port(void){
 	return;
 }
 
+int write_port(unsigned char sendBuffer[], unsigned int sendSize)
+{
+
+	int n;
+
+	n = write(fd,sendBuffer, sendSize);
+
+	if (n < 0){	
+		ROS_ERROR("Failed to write to port");
+		return 0;
+	}
+	else{
+		//printf("We Transmitted %d\n",n);
+	}
+	usleep(10000);
+	//sleep(1);
+	return (n);
+}
 
 int main(int argc, char **argv){ //we need argc and argv for the rosInit function
 
@@ -300,13 +320,48 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 
 	while (ros::ok()){
 
+
+		//All on/All off
+		led_test++;
+		if (led_test == 1)
+			write_port((unsigned char *)"$1N", 4);
+		else if (led_test == 2)
+			write_port((unsigned char *)"$2N", 4);
+		else if (led_test == 3)
+			write_port((unsigned char *)"$3N", 4);
+		else if (led_test == 4)
+			write_port((unsigned char *)"$4N", 4);
+		else if (led_test == 5)
+			write_port((unsigned char *)"$5N", 4);
+		else if (led_test == 6)
+			write_port((unsigned char *)"$6N", 4);
+		else if (led_test == 7)
+			write_port((unsigned char *)"$7N", 4);
+		else if (led_test == 8)
+			write_port((unsigned char *)"$1F", 4);
+		else if (led_test == 9)
+			write_port((unsigned char *)"$2F", 4);
+		else if (led_test == 10)
+			write_port((unsigned char *)"$3F", 4);
+		else if (led_test == 11)
+			write_port((unsigned char *)"$4F", 4);
+		else if (led_test == 12)
+			write_port((unsigned char *)"$5F", 4);
+		else if (led_test == 13)
+			write_port((unsigned char *)"$6F", 4);
+		else if (led_test == 14)
+		{
+			write_port((unsigned char *)"$7F", 4);
+			led_test = 0;
+		}
+
 		// Read data from the port
 		if (read_port() == 1)
 		{
 
-			if (bt_shutdown.data == (uint8_t)1) ROS_ERROR("BLUETOOTH SHUTDOWN ACTIVATED");
+			//if (bt_shutdown.data == (uint8_t)1) ROS_ERROR("BLUETOOTH SHUTDOWN ACTIVATED");
 
-			if (reed_status.data == (uint8_t)-1) ROS_WARN("REED SWITCH - NO RESPONSE");
+			//if (reed_status.data == (uint8_t)-1) ROS_WARN("REED SWITCH - NO RESPONSE");
 
 			//There should only ever be 2 batteries connected...
 			int battery_counter = 0;
@@ -330,8 +385,8 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 					battery1_publish_data.data = battery_voltage3.data;
 				else if (battery_counter == 1)
 					battery2_publish_data.data = battery_voltage3.data;
-				else
-					ROS_WARN("More than 2 batteries detected...");
+				//else
+					//ROS_WARN("More than 2 batteries detected...");
 				battery_counter++;
 			}
 			if (battery_voltage4.data != (float)-1.0) 
@@ -340,13 +395,14 @@ int main(int argc, char **argv){ //we need argc and argv for the rosInit functio
 					battery1_publish_data.data = battery_voltage4.data;
 				else if (battery_counter == 1)
 					battery2_publish_data.data = battery_voltage4.data;
-				else
-					ROS_WARN("More than 2 batteries detected...");					
+				//else
+					//ROS_WARN("More than 2 batteries detected...");					
 				battery_counter++;
 			}
 
 			if (battery_counter < 2)
-				ROS_WARN("Only %d Batteries found", battery_counter);
+				;
+				//ROS_WARN("Only %d Batteries found", battery_counter);
 			else
 			{
 				pubBatteryVoltage1.publish(battery1_publish_data);
