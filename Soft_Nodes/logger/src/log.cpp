@@ -29,6 +29,7 @@ provided.
 #include "std_msgs/String.h"
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseStamped.h>
 
 
 
@@ -36,6 +37,7 @@ void xCallback(const std_msgs::Int32::ConstPtr& logX);
 void yCallback(const std_msgs::Int32::ConstPtr& logY);
 void zCallback(const std_msgs::Float32::ConstPtr& svpDepth);
 void aCallback(const std_msgs::String::ConstPtr& logAction);
+void odomCallBack (const nav_msgs::Odometry::ConstPtr& odomData);
 
 int x, y;
 float z;
@@ -153,11 +155,17 @@ void aCallback(const std_msgs::String::ConstPtr& logAction)
 
 	return;
 }
-void odomCallBack (const nav_msgs::Odometry::ConstPtr& odomData){
+void odomCallBack (const nav_msgs::Odometry::ConstPtr& odomData)
+{
+
+	geometry_msgs::PoseStamped odom_pose;
 
     	odom_pose.header.frame_id = "odom";
     	odom_pose.header.stamp = odomData->header.stamp;
 	odom_pose.pose.position = odomData->pose.pose.position;
 	odom_pose.pose.orientation = odomData->pose.pose.orientation;
+	
+  	x = odom_pose.pose.position.x;
+  	y = odom_pose.pose.position.y;
 	return;
 	}
